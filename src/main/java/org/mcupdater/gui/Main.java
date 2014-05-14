@@ -21,13 +21,7 @@ public class Main
 						UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 					}
 					new MainForm();
-				} catch (IllegalAccessException e) {
-					e.printStackTrace();
-				} catch (InstantiationException e) {
-					e.printStackTrace();
-				} catch (UnsupportedLookAndFeelException e) {
-					e.printStackTrace();
-				} catch (ClassNotFoundException e) {
+				} catch (IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException | ClassNotFoundException e) {
 					e.printStackTrace();
 				}
 			}

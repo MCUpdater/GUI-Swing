@@ -46,9 +46,9 @@ public class MainForm extends MCUApp
 		frameMain.setBounds(100, 100, 1175, 592);
 		frameMain.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		panelTop = new JPanel();
-		panelTop.setLayout(new BorderLayout(0,0));
+		panelTop.setLayout(new BorderLayout(0, 0));
 		panelLeftButtons = new JPanel();
-		panelLeftButtons.setLayout(new FlowLayout(FlowLayout.LEFT,0,0));
+		panelLeftButtons.setLayout(new FlowLayout(FlowLayout.LEFT, 0, 0));
 		panelTop.add(panelLeftButtons, BorderLayout.WEST);
 		button1 = new JButton();
 		button1.setText("A");
@@ -61,7 +61,7 @@ public class MainForm extends MCUApp
 		panelLeftButtons.add(button3);
 
 		panelRightButtons = new JPanel();
-		panelRightButtons.setLayout(new FlowLayout(FlowLayout.RIGHT,0,0));
+		panelRightButtons.setLayout(new FlowLayout(FlowLayout.RIGHT, 0, 0));
 		panelTop.add(panelRightButtons, BorderLayout.EAST);
 		button4 = new JButton();
 		button4.setText("1");
