@@ -5,10 +5,11 @@ import org.mcupdater.util.MCUpdater;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.image.BufferedImage;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-final class ServerListCellRenderer extends JPanel implements ListCellRenderer
+final class ServerListCellRenderer extends JPanel implements ListCellRenderer<ServerList>
 {
 	private static final int LIST_CELL_ICON_SIZE = 32;
 
@@ -49,17 +50,28 @@ final class ServerListCellRenderer extends JPanel implements ListCellRenderer
 	}
 
 	@Override
-	public Component getListCellRendererComponent(JList list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
-		ServerList entry = (ServerList) value;
+	public Component getListCellRendererComponent(JList<? extends ServerList> list, ServerList value, int index, boolean isSelected, boolean cellHasFocus) {
+		ServerList entry = value;
 		String serverName = entry.getName();
+		Font fontInfo = new Font("SansSerif", Font.PLAIN, 10);
 		lblServerName.setText(serverName);
 		lblMCVersion.setText("MC Version: " + entry.getVersion());
 		lblPackVersion.setText("Pack revision: " + entry.getRevision());
+		lblServerName.setFont(fontInfo);
+		lblMCVersion.setFont(fontInfo);
+		lblPackVersion.setFont(fontInfo);
+		ImageIcon iconPack;
 		try {
-			lblIcon.setIcon(new ImageIcon(new URL(entry.getIconUrl())));
+			iconPack = new ImageIcon(new URL(entry.getIconUrl()));
 		} catch (MalformedURLException e) {
-			lblIcon.setIcon(MCUpdater.getInstance().defaultIcon);
+			iconPack = MCUpdater.getInstance().defaultIcon;
 		}
+		Image img = iconPack.getImage(); //.getScaledInstance(32,32,Image.SCALE_SMOOTH);
+		BufferedImage bi = new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
+		Graphics g = bi.createGraphics();
+		g.drawImage(img, 0, 0, 32, 32, lblIcon);
+		lblIcon.setIcon(new ImageIcon(bi));
+
 		if (isSelected) {
 			adjustColors(list.getSelectionBackground(), list.getSelectionForeground(), this, lblIcon, lblServerName, lblMCVersion, lblPackVersion);
 		} else {

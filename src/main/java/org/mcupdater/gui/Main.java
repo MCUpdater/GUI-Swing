@@ -1,5 +1,7 @@
 package org.mcupdater.gui;
 
+import org.mcupdater.settings.SettingsManager;
+
 import javax.swing.*;
 import javax.swing.UIManager.LookAndFeelInfo;
 import java.awt.*;
@@ -10,6 +12,7 @@ public class Main
 		EventQueue.invokeLater(new Runnable()
 		{
 			public void run() {
+				SettingsManager.getInstance().loadSettings();
 				try {
 					for (LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
 						if ("Nimbus".equals(info.getName())) {
