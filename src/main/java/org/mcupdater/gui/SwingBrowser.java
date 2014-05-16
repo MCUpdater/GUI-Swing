@@ -12,7 +12,7 @@ import java.net.URL;
 public class SwingBrowser extends BrowserProxy {
 
     public SwingBrowser() {
-        baseComponent = new JTextPane(){
+        baseComponent = new JTextPane() {
             @Override
             protected InputStream getStream(URL url) throws IOException {
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -23,7 +23,7 @@ public class SwingBrowser extends BrowserProxy {
     }
 
     @Override
-    public void navigate(URL navigateTo) {
+    public void navigate(String navigateTo) {
         try {
             ((JTextPane) baseComponent).setPage(navigateTo);
         } catch (IOException e) {

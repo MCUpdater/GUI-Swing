@@ -1,7 +1,6 @@
 package org.mcupdater.gui;
 
 import javax.swing.*;
-import java.net.URL;
 
 public abstract class BrowserProxy {
 
@@ -16,7 +15,7 @@ public abstract class BrowserProxy {
         }
     }
 
-    public abstract void navigate(URL navigateTo);
+    public abstract void navigate(String navigateTo);
 
     public JComponent getBaseComponent() {
         return baseComponent;
