@@ -23,6 +23,8 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.*;
 import java.util.List;
 import java.util.logging.Level;
@@ -30,24 +32,28 @@ import java.util.logging.Logger;
 
 public class MainForm extends MCUApp implements SettingsListener
 {
-	private static MainForm window;
+	private static MainForm instance;
 	private JFrame frameMain;
 	private SLListModel slModel;
 	private JList<ServerList> serverList;
+    private BrowserProxy newsBrowser = BrowserProxy.createProxy();
 
 	public MainForm() {
 		SettingsManager.getInstance().addListener(this);
 		this.baseLogger = Logger.getLogger("MCUpdater");
 		baseLogger.setLevel(Level.ALL);
 		Version.setApp(this);
-		window = this;
+		instance = this;
 		initGui();
 		refreshInstanceList();
 		frameMain.setVisible(true);
 	}
 
+    public static MainForm getInstance() {
+        return instance;
+    }
 
-	// Section - GUI elements
+    // Section - GUI elements
 
 	public void initGui() {
 		frameMain = new JFrame();
@@ -68,19 +74,16 @@ public class MainForm extends MCUApp implements SettingsListener
 				btnAddURL.setToolTipText("Add URL");
 				btnAddURL.setVerticalTextPosition(SwingConstants.BOTTOM);
 				btnAddURL.setHorizontalTextPosition(SwingConstants.CENTER);
-				//btnAddURL.setFont(btnAddURL.getFont().deriveFont(10f));
 				JButton btnRefresh = new JButton();
 				btnRefresh.setIcon(new ImageIcon(this.getClass().getResource("arrow_refresh.png")));
 				btnRefresh.setToolTipText("Refresh");
 				btnRefresh.setVerticalTextPosition(SwingConstants.BOTTOM);
 				btnRefresh.setHorizontalTextPosition(SwingConstants.CENTER);
-				//btnRefresh.setFont(btnRefresh.getFont().deriveFont(10f));
 				JButton btnSettings = new JButton();
 				btnSettings.setIcon(new ImageIcon(this.getClass().getResource("cog.png")));
 				btnSettings.setToolTipText("Settings");
 				btnSettings.setVerticalTextPosition(SwingConstants.BOTTOM);
 				btnSettings.setHorizontalTextPosition(SwingConstants.CENTER);
-				//btnSettings.setFont(btnSettings.getFont().deriveFont(10f));
 				panelButtons.add(btnAddURL);
 				panelButtons.add(btnRefresh);
 				panelButtons.add(btnSettings);
@@ -104,7 +107,7 @@ public class MainForm extends MCUApp implements SettingsListener
 		{
 			JTabbedPane instanceTabs = new JTabbedPane();
 			{
-				instanceTabs.addTab("News", new JPanel());
+				instanceTabs.addTab("News", newsBrowser.getBaseComponent());
 				instanceTabs.addTab("Progress", new JPanel());
 				instanceTabs.addTab("Changes", new JPanel());
 				instanceTabs.addTab("Maintenance", new JPanel());
@@ -118,6 +121,17 @@ public class MainForm extends MCUApp implements SettingsListener
 				button4.setText("1");
 				JButton button5 = new JButton();
 				button5.setText("2");
+                button5.addActionListener(new ActionListener(){
+
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        try {
+                            newsBrowser.navigate(new URL("http://www.google.com"));
+                        } catch (MalformedURLException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                });
 				JButton button6 = new JButton();
 				button6.setText("3");
 				button6.addActionListener(new ActionListener(){
