@@ -1,16 +1,22 @@
 package org.mcupdater.gui;
 
+import com.google.gson.Gson;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.mcupdater.MCUApp;
 import org.mcupdater.api.Version;
 import org.mcupdater.downloadlib.DownloadQueue;
 import org.mcupdater.downloadlib.Downloadable;
+import org.mcupdater.instance.Instance;
+import org.mcupdater.model.ConfigFile;
+import org.mcupdater.model.GenericModule;
+import org.mcupdater.model.Module;
 import org.mcupdater.model.ServerList;
 import org.mcupdater.mojang.MinecraftVersion;
 import org.mcupdater.settings.Profile;
 import org.mcupdater.settings.Settings;
 import org.mcupdater.settings.SettingsListener;
 import org.mcupdater.settings.SettingsManager;
+import org.mcupdater.util.MCUpdater;
 import org.mcupdater.util.ServerPackParser;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -22,7 +28,12 @@ import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.List;
 import java.util.logging.Level;
@@ -35,8 +46,10 @@ public class MainForm extends MCUApp implements SettingsListener {
     private JList<ServerList> serverList;
     private BrowserProxy newsBrowser = BrowserProxy.createProxy();
     private JButton btnRefresh;
+	private ServerList selected;
+	private Gson gson = new Gson();
 
-    public MainForm() {
+	public MainForm() {
         SettingsManager.getInstance().addListener(this);
         this.baseLogger = Logger.getLogger("MCUpdater");
         baseLogger.setLevel(Level.ALL);
@@ -107,6 +120,7 @@ public class MainForm extends MCUApp implements SettingsListener {
             JTabbedPane instanceTabs = new JTabbedPane();
             {
                 instanceTabs.addTab("News", newsBrowser.getBaseComponent());
+	            instanceTabs.addTab("Mods", new JPanel());
                 instanceTabs.addTab("Progress", new JPanel());
                 instanceTabs.addTab("Changes", new JPanel());
                 instanceTabs.addTab("Maintenance", new JPanel());
@@ -195,12 +209,53 @@ public class MainForm extends MCUApp implements SettingsListener {
         }
     }
 
-    private void changeSelectedServer(ServerList selectedValue) {
-        newsBrowser.navigate(selectedValue.getNewsUrl());
-        //TODO
+    private void changeSelectedServer(ServerList entry) {
+	    this.selected = entry;
+        newsBrowser.navigate(entry.getNewsUrl());
+	    List<Module> modList = ServerPackParser.loadFromURL(entry.getPackUrl(), entry.getServerId());
+	    Set<String> digests = new HashSet<>();
+	    for (Module mod : modList) {
+		    if (!mod.getMD5().isEmpty()) {
+			    digests.add(mod.getMD5());
+		    }
+		    for (ConfigFile cf : mod.getConfigs()) {
+			    if (!cf.getMD5().isEmpty()) {
+				    digests.add(cf.getMD5());
+			    }
+		    }
+		    for (GenericModule sm : mod.getSubmodules()) {
+			    if (!sm.getMD5().isEmpty()) {
+				    digests.add(sm.getMD5());
+			    }
+		    }
+	    }
+	    String remoteHash = MCUpdater.calculateGroupHash(digests);
+	    Instance instData = new Instance();
+	    final Path instanceFile = MCUpdater.getInstance().getInstanceRoot().resolve(entry.getServerId()).resolve("instance.json");
+	    try {
+		    BufferedReader reader = Files.newBufferedReader(instanceFile, StandardCharsets.UTF_8);
+		    instData = gson.fromJson(reader, Instance.class);
+		    reader.close();
+	    } catch (IOException e) {
+		    baseLogger.log(Level.WARNING, "instance.json file not found.  This is not an error if the instance has not been installed.");
+	    }
+	    refreshModList(modList, instData.getOptionalMods());
+        boolean needUpdate = (instData.getHash().isEmpty() || !instData.getHash().equals(remoteHash));
+	    boolean needNewMCU = Version.isVersionOld(entry.getMCUVersion());
+
+	    if (needUpdate) {
+		    JOptionPane.showMessageDialog(null,"Your configuration is out of sync with the server. Updating is necessary.","MCUpdater",JOptionPane.WARNING_MESSAGE);
+	    }
+	    if (needNewMCU) {
+		    JOptionPane.showMessageDialog(null,"The server pack indicates that it is for a newer version of MCUpdater than you are currently using.\nThis version of MCUpdater may not properly handle this server.");
+	    }
     }
 
-    @Override
+	private void refreshModList(List<Module> modList, Map<String, Boolean> optionalMods) {
+		//TODO
+	}
+
+	@Override
     public void setStatus(String string) {
 
     }
@@ -245,7 +300,6 @@ public class MainForm extends MCUApp implements SettingsListener {
         public void valueChanged(ListSelectionEvent e) {
             if (!e.getValueIsAdjusting()) {
                 changeSelectedServer(serverList.getSelectedValue());
-                // TODO: Check for update
             }
         }
     }
