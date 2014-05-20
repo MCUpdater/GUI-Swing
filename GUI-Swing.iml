@@ -20,6 +20,7 @@
     <orderEntry type="library" exported="" name="Gradle: commons-io-2.4" level="project" />
     <orderEntry type="library" exported="" name="Gradle: gson-2.2.4" level="project" />
     <orderEntry type="library" exported="" name="Gradle: jfxrt" level="project" />
+    <orderEntry type="library" exported="" name="Gradle: swingx-all-1.6.5" level="project" />
   </component>
 </module>
 

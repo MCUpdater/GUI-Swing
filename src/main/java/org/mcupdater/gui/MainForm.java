@@ -7,10 +7,7 @@ import org.mcupdater.api.Version;
 import org.mcupdater.downloadlib.DownloadQueue;
 import org.mcupdater.downloadlib.Downloadable;
 import org.mcupdater.instance.Instance;
-import org.mcupdater.model.ConfigFile;
-import org.mcupdater.model.GenericModule;
-import org.mcupdater.model.Module;
-import org.mcupdater.model.ServerList;
+import org.mcupdater.model.*;
 import org.mcupdater.mojang.MinecraftVersion;
 import org.mcupdater.settings.Profile;
 import org.mcupdater.settings.Settings;
@@ -48,6 +45,7 @@ public class MainForm extends MCUApp implements SettingsListener {
     private JButton btnRefresh;
 	private ServerList selected;
 	private Gson gson = new Gson();
+	private JPanel modPanel = new JPanel();
 
 	public MainForm() {
         SettingsManager.getInstance().addListener(this);
@@ -117,10 +115,12 @@ public class MainForm extends MCUApp implements SettingsListener {
         JPanel contentPanel = new JPanel();
         contentPanel.setLayout(new BorderLayout(0, 0));
         {
+	        JScrollPane modScroller = new JScrollPane(modPanel);
+	        modScroller.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
             JTabbedPane instanceTabs = new JTabbedPane();
             {
                 instanceTabs.addTab("News", newsBrowser.getBaseComponent());
-	            instanceTabs.addTab("Mods", new JPanel());
+	            instanceTabs.addTab("Mods", modScroller);
                 instanceTabs.addTab("Progress", new JPanel());
                 instanceTabs.addTab("Changes", new JPanel());
                 instanceTabs.addTab("Maintenance", new JPanel());
@@ -210,9 +210,15 @@ public class MainForm extends MCUApp implements SettingsListener {
     }
 
     private void changeSelectedServer(ServerList entry) {
+	    frameMain.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 	    this.selected = entry;
         newsBrowser.navigate(entry.getNewsUrl());
 	    List<Module> modList = ServerPackParser.loadFromURL(entry.getPackUrl(), entry.getServerId());
+	    try {
+		    Collections.sort(modList, new ModuleComparator(ModuleComparator.Mode.OPTIONAL_FIRST));
+	    } catch (Exception e) {
+		    baseLogger.warning("Unable to sort mod list!");
+	    }
 	    Set<String> digests = new HashSet<>();
 	    for (Module mod : modList) {
 		    if (!mod.getMD5().isEmpty()) {
@@ -249,10 +255,21 @@ public class MainForm extends MCUApp implements SettingsListener {
 	    if (needNewMCU) {
 		    JOptionPane.showMessageDialog(null,"The server pack indicates that it is for a newer version of MCUpdater than you are currently using.\nThis version of MCUpdater may not properly handle this server.");
 	    }
+	    frameMain.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
     }
 
 	private void refreshModList(List<Module> modList, Map<String, Boolean> optionalMods) {
-		//TODO
+		modPanel.setVisible(false);
+		modPanel.removeAll();
+		modPanel.setLayout(new BoxLayout(modPanel, BoxLayout.PAGE_AXIS));
+		for (Module entry : modList) {
+			if (optionalMods.containsKey(entry.getId())) {
+				modPanel.add(new ModuleWidget(entry, true, optionalMods.get(entry.getId())));
+			} else {
+				modPanel.add(new ModuleWidget(entry, false, false));
+			}
+		}
+		modPanel.setVisible(true);
 	}
 
 	@Override
