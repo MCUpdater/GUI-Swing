@@ -13,8 +13,7 @@ import java.awt.*;
 import java.io.File;
 import java.util.List;
 
-public class Main
-{
+public class Main {
 	public static List<String> passthroughArgs;
 	private static String defaultPackURL;
 
@@ -28,8 +27,7 @@ public class Main
 		passthroughArgs = options.valuesOf(nonOpts);
 		MCUpdater.getInstance(options.valueOf(rootSpec));
 		setDefaultPackURL(options.valueOf(packSpec));
-		EventQueue.invokeLater(new Runnable()
-		{
+		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				//System.setProperty("java.util.Arrays.useLegacyMergeSort", "true");
 				SettingsManager.getInstance().loadSettings();

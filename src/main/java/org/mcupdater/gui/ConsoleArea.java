@@ -7,8 +7,7 @@ import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 import java.awt.*;
 
-public class ConsoleArea extends JTextPane
-{
+public class ConsoleArea extends JTextPane {
 	private StyledDocument doc = this.getStyledDocument();
 	public Style infoStyle = doc.addStyle("Info", null);
 	public Style warnStyle = doc.addStyle("Warning", null);

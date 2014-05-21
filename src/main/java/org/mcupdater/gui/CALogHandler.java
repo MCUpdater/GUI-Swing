@@ -7,8 +7,7 @@ import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
-public class CALogHandler extends Handler
-{
+public class CALogHandler extends Handler {
 	private ConsoleArea console;
 	private SimpleDateFormat sdFormat = new SimpleDateFormat("[HH:mm:ss.SSS] ");
 
@@ -41,8 +40,10 @@ public class CALogHandler extends Handler
 	}
 
 	@Override
-	public void flush() {}
+	public void flush() {
+	}
 
 	@Override
-	public void close() throws SecurityException {}
+	public void close() throws SecurityException {
+	}
 }

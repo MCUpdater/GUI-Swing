@@ -8,18 +8,16 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.util.StringTokenizer;
 
-public class ModuleWidget extends JPanel
-{
+public class ModuleWidget extends JPanel {
 	private Module entry;
 	private Boolean isSelected;
 
 	public ModuleWidget(Module module, Boolean overrideDefault, Boolean overrideValue) {
-		this.setLayout(new BoxLayout(this,BoxLayout.PAGE_AXIS));
+		this.setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
 		this.entry = module;
 		if (!entry.getRequired()) {
 			final JCheckBox chkModule = new JCheckBox(this.entry.getName());
-			chkModule.addChangeListener(new ChangeListener()
-			{
+			chkModule.addChangeListener(new ChangeListener() {
 				@Override
 				public void stateChanged(ChangeEvent e) {
 					isSelected = chkModule.isSelected();

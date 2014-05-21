@@ -7,8 +7,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class SLListModel extends AbstractListModel<ServerList>
-{
+public class SLListModel extends AbstractListModel<ServerList> {
 	private final ArrayList<ServerList> model;
 
 	public SLListModel() {
@@ -63,6 +62,6 @@ public class SLListModel extends AbstractListModel<ServerList>
 	public void clearAndSet(List<ServerList> newList) {
 		model.clear();
 		model.addAll(newList);
-		fireContentsChanged(this,0,getSize());
+		fireContentsChanged(this, 0, getSize());
 	}
 }

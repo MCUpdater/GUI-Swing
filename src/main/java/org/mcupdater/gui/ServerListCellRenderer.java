@@ -9,8 +9,7 @@ import java.awt.image.BufferedImage;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-final class ServerListCellRenderer extends JPanel implements ListCellRenderer<ServerList>
-{
+final class ServerListCellRenderer extends JPanel implements ListCellRenderer<ServerList> {
 	private static final int LIST_CELL_ICON_SIZE = 32;
 
 	private JLabel lblIcon;
