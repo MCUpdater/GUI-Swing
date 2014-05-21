@@ -42,6 +42,7 @@ public class Main {
 					if (UIManager.getLookAndFeel().getName().equals("Metal")) {
 						UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 					}
+					new ConsoleForm();
 					new MainForm();
 				} catch (IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException | ClassNotFoundException e) {
 					e.printStackTrace();

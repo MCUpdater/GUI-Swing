@@ -2,6 +2,7 @@ package org.mcupdater.gui;
 
 import com.google.gson.Gson;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.mcupdater.FMLStyleFormatter;
 import org.mcupdater.MCUApp;
 import org.mcupdater.api.Version;
 import org.mcupdater.downloadlib.DownloadQueue;
@@ -14,6 +15,7 @@ import org.mcupdater.settings.Settings;
 import org.mcupdater.settings.SettingsListener;
 import org.mcupdater.settings.SettingsManager;
 import org.mcupdater.util.MCUpdater;
+import org.mcupdater.util.MojangStatus;
 import org.mcupdater.util.ServerPackParser;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -33,6 +35,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.List;
+import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -51,12 +54,25 @@ public class MainForm extends MCUApp implements SettingsListener {
 		SettingsManager.getInstance().addListener(this);
 		this.baseLogger = Logger.getLogger("MCUpdater");
 		baseLogger.setLevel(Level.ALL);
+		FileHandler mcuHandler;
+		try {
+			mcuHandler = new FileHandler(MCUpdater.getInstance().getArchiveFolder().resolve("MCUpdater.log").toString(), 0, 3);
+			mcuHandler.setFormatter(new FMLStyleFormatter());
+			baseLogger.addHandler(mcuHandler);
+		} catch (SecurityException | IOException e) {
+			e.printStackTrace();
+		}
+		baseLogger.addHandler(ConsoleForm.getHandler());
 		Version.setApp(this);
+		MCUpdater.getInstance().setParent(this);
 		instance = this;
+		baseLogger.info("Reticulating splines");
 		initGui();
 		bindLogic();
 		refreshInstanceList();
 		frameMain.setVisible(true);
+		MojangStatus current = MojangStatus.getMojangStatus();
+		baseLogger.info(current.getUpdated().toString() + ": status=" + current.getStatus() + " auth=" + current.getAuth() + " session=" + current.getSession());
 	}
 
 	public static MainForm getInstance() {
@@ -67,6 +83,7 @@ public class MainForm extends MCUApp implements SettingsListener {
 
 	public void initGui() {
 		frameMain = new JFrame();
+		frameMain.setIconImage(new ImageIcon(this.getClass().getResource("mcu-icon.png")).getImage());
 		frameMain.setTitle("MCUpdater " + Version.VERSION + Version.BUILD_LABEL);
 		frameMain.setBounds(100, 100, 1175, 592);
 		frameMain.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -132,6 +149,12 @@ public class MainForm extends MCUApp implements SettingsListener {
 			{
 				JButton button4 = new JButton();
 				button4.setText("1");
+				button4.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						ConsoleForm.getConsole().log("Out of band message.");
+					}
+				});
 				JButton button5 = new JButton();
 				button5.setText("2");
 				JButton button6 = new JButton();
@@ -256,6 +279,7 @@ public class MainForm extends MCUApp implements SettingsListener {
 			JOptionPane.showMessageDialog(null, "The server pack indicates that it is for a newer version of MCUpdater than you are currently using.\nThis version of MCUpdater may not properly handle this server.");
 		}
 		frameMain.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+		baseLogger.info("Selection changed to: " + entry.getServerId());
 	}
 
 	private void refreshModList(List<Module> modList, Map<String, Boolean> optionalMods) {

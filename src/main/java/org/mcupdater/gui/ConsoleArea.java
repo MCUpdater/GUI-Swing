@@ -18,6 +18,7 @@ public class ConsoleArea extends JTextPane {
 		StyleConstants.setForeground(infoStyle, new Color(0x007700));
 		StyleConstants.setForeground(warnStyle, new Color(0xaaaa00));
 		StyleConstants.setForeground(errorStyle, Color.red);
+		this.setEditable(false);
 	}
 
 	public void log(String msg) {
@@ -36,5 +37,10 @@ public class ConsoleArea extends JTextPane {
 		} catch (BadLocationException e) {
 			e.printStackTrace();
 		}
+	}
+
+	@Override
+	public boolean getScrollableTracksViewportWidth() {
+		return getUI().getPreferredSize(this).width <= getParent().getSize().width;
 	}
 }
