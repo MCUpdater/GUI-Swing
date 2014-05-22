@@ -17,6 +17,7 @@ import org.mcupdater.settings.SettingsManager;
 import org.mcupdater.util.MCUpdater;
 import org.mcupdater.util.MojangStatus;
 import org.mcupdater.util.ServerPackParser;
+import org.mcupdater.util.ServerStatus;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -48,9 +49,10 @@ public class MainForm extends MCUApp implements SettingsListener {
 	private JButton btnRefresh;
 	private ServerList selected;
 	private Gson gson = new Gson();
-	private JPanel modPanel = new JPanel();
+	protected ModulePanel modPanel = new ModulePanel();
 	private ImageIcon GREEN_FLAG = new ImageIcon(this.getClass().getResource("flag_green.png"));
 	private ImageIcon RED_FLAG = new ImageIcon(this.getClass().getResource("flag_red.png"));
+	private JLabel lblServerStatus;
 
 	public MainForm() {
 		SettingsManager.getInstance().addListener(this);
@@ -68,9 +70,11 @@ public class MainForm extends MCUApp implements SettingsListener {
 		Version.setApp(this);
 		MCUpdater.getInstance().setParent(this);
 		instance = this;
-		baseLogger.info("Reticulating splines");
+		baseLogger.info("Activate interlock!");
 		initGui();
+		baseLogger.info("Dynatherms connected!");
 		bindLogic();
+		baseLogger.info("Infracells up!");
 		refreshInstanceList();
 		frameMain.setVisible(true);
 	}
@@ -148,8 +152,8 @@ public class MainForm extends MCUApp implements SettingsListener {
 			panelBottom.setLayout(new BorderLayout());
 			contentPanel.add(panelBottom, BorderLayout.SOUTH);
 
-			JPanel panelMojang = new JPanel();
-			panelMojang.setLayout(new GridBagLayout());
+			JPanel panelStatus = new JPanel();
+			panelStatus.setLayout(new GridBagLayout());
 			{
 				GridBagConstraints gbc = new GridBagConstraints();
 				gbc.insets = new Insets(0,5,0,0);
@@ -163,17 +167,31 @@ public class MainForm extends MCUApp implements SettingsListener {
 				MojangStatus current = MojangStatus.getMojangStatus();
 				lblAuth.setIcon(current.getAuth() ? GREEN_FLAG : RED_FLAG);
 				lblSession.setIcon(current.getSession() ? GREEN_FLAG : RED_FLAG);
-				panelMojang.add(lblMojang, gbc);
-				panelMojang.add(lblAuth, gbc);
-				panelMojang.add(lblSession, gbc);
+				panelStatus.add(lblMojang, gbc);
+				panelStatus.add(lblAuth, gbc);
+				panelStatus.add(lblSession, gbc);
+				JSeparator sep = new JSeparator(SwingConstants.VERTICAL);
+				sep.setPreferredSize(new Dimension(5,1));
+				gbc.fill = GridBagConstraints.VERTICAL;
+				panelStatus.add(sep, gbc);
+				gbc = new GridBagConstraints();
+				lblServerStatus = new JLabel("");
+				panelStatus.add(lblServerStatus, gbc);
 			}
-			panelBottom.add(panelMojang, BorderLayout.WEST);
+			panelBottom.add(panelStatus, BorderLayout.WEST);
 
-			JPanel panelRightButtons = new JPanel();
-			panelRightButtons.setLayout(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+			JPanel panelActions = new JPanel();
+			panelActions.setLayout(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+			{
+
+			}
+			panelBottom.add(panelActions, BorderLayout.EAST);
+
+			JPanel panelDebug = new JPanel();
+			panelDebug.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
 			{
 				JButton button4 = new JButton();
-				button4.setText("1");
+				button4.setText("Console Test");
 				button4.addActionListener(new ActionListener() {
 					@Override
 					public void actionPerformed(ActionEvent e) {
@@ -181,9 +199,9 @@ public class MainForm extends MCUApp implements SettingsListener {
 					}
 				});
 				JButton button5 = new JButton();
-				button5.setText("2");
+				button5.setText("Undefined");
 				JButton button6 = new JButton();
-				button6.setText("3");
+				button6.setText("System L&F");
 				button6.addActionListener(new ActionListener() {
 
 					@Override
@@ -197,11 +215,11 @@ public class MainForm extends MCUApp implements SettingsListener {
 
 					}
 				});
-				panelRightButtons.add(button4);
-				panelRightButtons.add(button5);
-				panelRightButtons.add(button6);
+				panelDebug.add(button4);
+				panelDebug.add(button5);
+				panelDebug.add(button6);
 			}
-			panelBottom.add(panelRightButtons, BorderLayout.EAST);
+			panelBottom.add(panelDebug, BorderLayout.CENTER);
 		}
 		frameMain.getContentPane().add(contentPanel, BorderLayout.CENTER);
 
@@ -293,7 +311,7 @@ public class MainForm extends MCUApp implements SettingsListener {
 		} catch (IOException e) {
 			baseLogger.log(Level.WARNING, "instance.json file not found.  This is not an error if the instance has not been installed.");
 		}
-		refreshModList(modList, instData.getOptionalMods());
+		modPanel.reload(modList, instData.getOptionalMods());
 		boolean needUpdate = (instData.getHash().isEmpty() || !instData.getHash().equals(remoteHash));
 		boolean needNewMCU = Version.isVersionOld(entry.getMCUVersion());
 
@@ -307,28 +325,14 @@ public class MainForm extends MCUApp implements SettingsListener {
 		baseLogger.info("Selection changed to: " + entry.getServerId());
 	}
 
-	private void refreshModList(List<Module> modList, Map<String, Boolean> optionalMods) {
-		modPanel.setVisible(false);
-		modPanel.removeAll();
-		modPanel.setLayout(new BoxLayout(modPanel, BoxLayout.PAGE_AXIS));
-		for (Module entry : modList) {
-			if (optionalMods.containsKey(entry.getId())) {
-				modPanel.add(new ModuleWidget(entry, true, optionalMods.get(entry.getId())));
-			} else {
-				modPanel.add(new ModuleWidget(entry, false, false));
-			}
-		}
-		modPanel.setVisible(true);
-	}
-
 	@Override
 	public void setStatus(String string) {
-
+		lblServerStatus.setText(string);
 	}
 
 	@Override
 	public void log(String msg) {
-
+		baseLogger.info(msg);
 	}
 
 	@Override
@@ -366,6 +370,17 @@ public class MainForm extends MCUApp implements SettingsListener {
 		public void valueChanged(ListSelectionEvent e) {
 			if (!e.getValueIsAdjusting()) {
 				changeSelectedServer(serverList.getSelectedValue());
+				try {
+					if (!serverList.getSelectedValue().getAddress().isEmpty()) {
+						ServerStatus serverStatus = ServerStatus.getStatus(serverList.getSelectedValue().getAddress());
+						setStatus(serverStatus.getMOTD() + " - " + serverStatus.getPlayers() + "/" + serverStatus.getMaxPlayers());
+					} else {
+						setStatus("Server status N/A");
+					}
+				} catch (Exception e1) {
+					baseLogger.log(Level.SEVERE, "Error getting server status", e1);
+					setStatus("Server info not available");
+				}
 			}
 		}
 	}

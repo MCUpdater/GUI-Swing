@@ -6,11 +6,13 @@ import org.mcupdater.model.Module;
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import java.awt.*;
 import java.util.StringTokenizer;
 
 public class ModuleWidget extends JPanel {
 	private Module entry;
 	private Boolean isSelected;
+	private boolean selected;
 
 	public ModuleWidget(Module module, Boolean overrideDefault, Boolean overrideValue) {
 		this.setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
@@ -20,7 +22,17 @@ public class ModuleWidget extends JPanel {
 			chkModule.addChangeListener(new ChangeListener() {
 				@Override
 				public void stateChanged(ChangeEvent e) {
+					System.out.println(entry.getName() + " - state changed");
 					isSelected = chkModule.isSelected();
+					if (isSelected) {
+						for (String modid : entry.getDepends().split(" ")) {
+							for (ModuleWidget entry : MainForm.getInstance().modPanel.getModules()) {
+								if (entry.entry.getId().equals(modid)) {
+									entry.setSelected(true);
+								}
+							}
+						}
+					}
 				}
 			});
 			if (this.entry.getMeta().containsKey("description")) {
@@ -74,5 +86,13 @@ public class ModuleWidget extends JPanel {
 		}
 		output.append("</html>");
 		return output.toString();
+	}
+
+	public void setSelected(boolean selected) {
+		for (Component component : this.getComponents()) {
+			if (component instanceof JCheckBox) {
+				((JCheckBox) component).setSelected(selected);
+			}
+		}
 	}
 }
