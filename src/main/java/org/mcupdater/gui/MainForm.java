@@ -49,6 +49,8 @@ public class MainForm extends MCUApp implements SettingsListener {
 	private ServerList selected;
 	private Gson gson = new Gson();
 	private JPanel modPanel = new JPanel();
+	private ImageIcon GREEN_FLAG = new ImageIcon(this.getClass().getResource("flag_green.png"));
+	private ImageIcon RED_FLAG = new ImageIcon(this.getClass().getResource("flag_red.png"));
 
 	public MainForm() {
 		SettingsManager.getInstance().addListener(this);
@@ -71,8 +73,6 @@ public class MainForm extends MCUApp implements SettingsListener {
 		bindLogic();
 		refreshInstanceList();
 		frameMain.setVisible(true);
-		MojangStatus current = MojangStatus.getMojangStatus();
-		baseLogger.info(current.getUpdated().toString() + ": status=" + current.getStatus() + " auth=" + current.getAuth() + " session=" + current.getSession());
 	}
 
 	public static MainForm getInstance() {
@@ -144,6 +144,31 @@ public class MainForm extends MCUApp implements SettingsListener {
 			}
 			contentPanel.add(instanceTabs, BorderLayout.CENTER);
 
+			JPanel panelBottom = new JPanel();
+			panelBottom.setLayout(new BorderLayout());
+			contentPanel.add(panelBottom, BorderLayout.SOUTH);
+
+			JPanel panelMojang = new JPanel();
+			panelMojang.setLayout(new GridBagLayout());
+			{
+				GridBagConstraints gbc = new GridBagConstraints();
+				gbc.insets = new Insets(0,5,0,0);
+				JLabel lblMojang = new JLabel("Mojang status -");
+				JLabel lblAuth = new JLabel("Auth:");
+				lblAuth.setIconTextGap(3);
+				lblAuth.setHorizontalTextPosition(JLabel.LEFT);
+				JLabel lblSession = new JLabel("Session:");
+				lblSession.setIconTextGap(3);
+				lblSession.setHorizontalTextPosition(JLabel.LEFT);
+				MojangStatus current = MojangStatus.getMojangStatus();
+				lblAuth.setIcon(current.getAuth() ? GREEN_FLAG : RED_FLAG);
+				lblSession.setIcon(current.getSession() ? GREEN_FLAG : RED_FLAG);
+				panelMojang.add(lblMojang, gbc);
+				panelMojang.add(lblAuth, gbc);
+				panelMojang.add(lblSession, gbc);
+			}
+			panelBottom.add(panelMojang, BorderLayout.WEST);
+
 			JPanel panelRightButtons = new JPanel();
 			panelRightButtons.setLayout(new FlowLayout(FlowLayout.RIGHT, 0, 0));
 			{
@@ -176,7 +201,7 @@ public class MainForm extends MCUApp implements SettingsListener {
 				panelRightButtons.add(button5);
 				panelRightButtons.add(button6);
 			}
-			contentPanel.add(panelRightButtons, BorderLayout.SOUTH);
+			panelBottom.add(panelRightButtons, BorderLayout.EAST);
 		}
 		frameMain.getContentPane().add(contentPanel, BorderLayout.CENTER);
 
