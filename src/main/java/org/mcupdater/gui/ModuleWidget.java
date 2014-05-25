@@ -7,12 +7,14 @@ import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.StringTokenizer;
 
 public class ModuleWidget extends JPanel {
 	private Module entry;
-	private Boolean isSelected;
 	private boolean selected;
+	private List<ModuleWidget> dependents = new ArrayList<>();
 
 	public ModuleWidget(Module module, Boolean overrideDefault, Boolean overrideValue) {
 		this.setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
@@ -22,13 +24,14 @@ public class ModuleWidget extends JPanel {
 			chkModule.addChangeListener(new ChangeListener() {
 				@Override
 				public void stateChanged(ChangeEvent e) {
-					System.out.println(entry.getName() + " - state changed");
-					isSelected = chkModule.isSelected();
-					if (isSelected) {
-						for (String modid : entry.getDepends().split(" ")) {
-							for (ModuleWidget entry : MainForm.getInstance().modPanel.getModules()) {
-								if (entry.entry.getId().equals(modid)) {
+					selected = chkModule.isSelected();
+					for (String modid : entry.getDepends().split(" ")) {
+						for (ModuleWidget entry : MainForm.getInstance().modPanel.getModules()) {
+							if (entry.entry.getId().equals(modid)) {
+								if (selected) {
 									entry.setSelected(true);
+								} else {
+									entry.checkDependents();
 								}
 							}
 						}
@@ -51,7 +54,7 @@ public class ModuleWidget extends JPanel {
 			if (this.entry.getMeta().containsKey("description")) {
 				reqMod.setToolTipText(splitMulti(this.entry.getMeta().get("description")));
 			}
-			this.isSelected = true;
+			this.selected = true;
 		}
 		if (entry.hasSubmodules()) {
 			for (GenericModule sm : entry.getSubmodules()) {
@@ -64,8 +67,23 @@ public class ModuleWidget extends JPanel {
 		}
 	}
 
-	public Boolean getIsSelected() {
-		return isSelected;
+	public void checkDependents() {
+		for (Component component : this.getComponents()) {
+			if (component instanceof JCheckBox) {
+				JCheckBox chkModule = (JCheckBox) component;
+				boolean shouldDisable = false;
+				for (ModuleWidget entry : dependents) {
+					if (entry.isSelected()) {
+						shouldDisable = true;
+					}
+				}
+				chkModule.setEnabled(!shouldDisable);
+			}
+		}
+	}
+
+	public boolean isSelected() {
+		return selected;
 	}
 
 	private String splitMulti(String input) {
@@ -81,7 +99,7 @@ public class ModuleWidget extends JPanel {
 				output.append("<br>");
 				lineLen = 0;
 			}
-			output.append(word + " ");
+			output.append(word).append(" ");
 			lineLen += word.length();
 		}
 		output.append("</html>");
@@ -94,5 +112,17 @@ public class ModuleWidget extends JPanel {
 				((JCheckBox) component).setSelected(selected);
 			}
 		}
+		checkDependents();
+	}
+
+	public void addDependent(ModuleWidget entry) {
+		this.dependents.add(entry);
+		if (entry.isSelected()) {
+			setSelected(true);
+		}
+	}
+
+	public Module getModule() {
+		return this.entry;
 	}
 }

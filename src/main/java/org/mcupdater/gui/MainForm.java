@@ -44,7 +44,9 @@ public class MainForm extends MCUApp implements SettingsListener {
 	private static MainForm instance;
 	private JFrame frameMain;
 	private SLListModel slModel;
+	private ProfileModel profileModel;
 	private JList<ServerList> serverList;
+	private JComboBox<Profile> cboProfiles;
 	private BrowserProxy newsBrowser = BrowserProxy.createProxy();
 	private JButton btnRefresh;
 	private ServerList selected;
@@ -76,11 +78,10 @@ public class MainForm extends MCUApp implements SettingsListener {
 		bindLogic();
 		baseLogger.info("Infracells up!");
 		refreshInstanceList();
+		refreshProfileList();
+		String lastProfile = SettingsManager.getInstance().getSettings().getLastProfile();
+		setSelectedInstance(SettingsManager.getInstance().getSettings().findProfile(lastProfile).getLastInstance());
 		frameMain.setVisible(true);
-	}
-
-	public static MainForm getInstance() {
-		return instance;
 	}
 
 	// Section - GUI elements
@@ -183,10 +184,18 @@ public class MainForm extends MCUApp implements SettingsListener {
 			JPanel panelActions = new JPanel();
 			panelActions.setLayout(new FlowLayout(FlowLayout.RIGHT, 0, 0));
 			{
+				profileModel = new ProfileModel();
+				cboProfiles = new JComboBox<>(profileModel);
+				JButton btnUpdate = new JButton("Update");
+				JButton btnLaunch = new JButton("Launch Minecraft");
 
+				panelActions.add(cboProfiles);
+				panelActions.add(btnUpdate);
+				panelActions.add(btnLaunch);
 			}
 			panelBottom.add(panelActions, BorderLayout.EAST);
 
+			/*
 			JPanel panelDebug = new JPanel();
 			panelDebug.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
 			{
@@ -220,6 +229,7 @@ public class MainForm extends MCUApp implements SettingsListener {
 				panelDebug.add(button6);
 			}
 			panelBottom.add(panelDebug, BorderLayout.CENTER);
+			*/
 		}
 		frameMain.getContentPane().add(contentPanel, BorderLayout.CENTER);
 
@@ -235,6 +245,19 @@ public class MainForm extends MCUApp implements SettingsListener {
 	}
 
 	// Section - Logic elements
+
+	private void setSelectedInstance(String instance) {
+		for (ServerList entry : ((SLListModel)serverList.getModel()).getData()) {
+			if (entry.getServerId().equals(instance)) {
+				serverList.setSelectedValue(entry, true);
+				return;
+			}
+		}
+	}
+
+	public static MainForm getInstance() {
+		return instance;
+	}
 
 	private void refreshInstanceList() {
 		Settings current = SettingsManager.getInstance().getSettings();
@@ -323,6 +346,10 @@ public class MainForm extends MCUApp implements SettingsListener {
 		}
 		frameMain.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 		baseLogger.info("Selection changed to: " + entry.getServerId());
+	}
+
+	private void refreshProfileList() {
+		profileModel.clearAndSet(SettingsManager.getInstance().getSettings().getProfiles());
 	}
 
 	@Override

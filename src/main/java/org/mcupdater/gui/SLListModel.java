@@ -64,4 +64,8 @@ public class SLListModel extends AbstractListModel<ServerList> {
 		model.addAll(newList);
 		fireContentsChanged(this, 0, getSize());
 	}
+
+	public List<ServerList> getData() {
+		return model;
+	}
 }
