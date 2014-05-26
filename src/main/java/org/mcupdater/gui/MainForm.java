@@ -55,6 +55,7 @@ public class MainForm extends MCUApp implements SettingsListener {
 	private ImageIcon GREEN_FLAG = new ImageIcon(this.getClass().getResource("flag_green.png"));
 	private ImageIcon RED_FLAG = new ImageIcon(this.getClass().getResource("flag_red.png"));
 	private JLabel lblServerStatus;
+	private ProgressView progressView;
 
 	public MainForm() {
 		SettingsManager.getInstance().addListener(this);
@@ -82,6 +83,11 @@ public class MainForm extends MCUApp implements SettingsListener {
 		String lastProfile = SettingsManager.getInstance().getSettings().getLastProfile();
 		setSelectedInstance(SettingsManager.getInstance().getSettings().findProfile(lastProfile).getLastInstance());
 		frameMain.setVisible(true);
+		doTesting();
+	}
+
+	private void doTesting() {
+		progressView.addProgressBar("Test","Layout test");
 	}
 
 	// Section - GUI elements
@@ -139,11 +145,14 @@ public class MainForm extends MCUApp implements SettingsListener {
 		{
 			JScrollPane modScroller = new JScrollPane(modPanel);
 			modScroller.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+			progressView = new ProgressView();
+			JScrollPane progressScroller = new JScrollPane(progressView);
+			progressScroller.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 			JTabbedPane instanceTabs = new JTabbedPane();
 			{
 				instanceTabs.addTab("News", newsBrowser.getBaseComponent());
 				instanceTabs.addTab("Mods", modScroller);
-				instanceTabs.addTab("Progress", new JPanel());
+				instanceTabs.addTab("Progress", progressScroller);
 				instanceTabs.addTab("Changes", new JPanel());
 				instanceTabs.addTab("Maintenance", new JPanel());
 			}
