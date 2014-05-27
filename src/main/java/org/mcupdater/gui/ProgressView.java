@@ -1,8 +1,6 @@
 package org.mcupdater.gui;
 
 import javax.swing.*;
-import javax.swing.border.Border;
-import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -12,10 +10,11 @@ import java.util.Map;
 public class ProgressView extends JPanel {
 
 	private final Map<MultiKey, ProgressItem> items = new HashMap<>();
+	protected ProgressView container;
 
 	public ProgressView() {
+		container = this;
 		this.setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
-		this.setBorder(new LineBorder(Color.BLACK, 2));
 	}
 
 	public synchronized void addProgressBar(String jobName, String parentId) {
@@ -29,6 +28,12 @@ public class ProgressView extends JPanel {
 		this.invalidate();
 		this.validate();
 		this.repaint();
+	}
+
+	public synchronized void updateProgress(final String jobName, final String parentId, float newProgress, int totalFiles, int successfulFiles) {
+		ProgressItem bar = items.get(new MultiKey(parentId, jobName));
+		if (bar == null) { return; }
+		bar.setProgress(newProgress, totalFiles, successfulFiles);
 	}
 
 	private class MultiKey
@@ -75,27 +80,55 @@ public class ProgressView extends JPanel {
 		private final JButton btnDismiss;
 		private boolean active;
 
-		public ProgressItem(String jobName, String parentId) {
+		public ProgressItem(final String jobName, final String parentId) {
 			active = true;
 			this.setLayout(new BorderLayout());
 			lblName = new JLabel(parentId + " - " + jobName);
-			pbProgress = new JProgressBar(0,1000);
+			lblName.setVerticalTextPosition(JLabel.CENTER);
+			pbProgress = new JProgressBar(0,10000);
 			lblStatus = new JLabel("Inactive");
+			lblStatus.setVerticalTextPosition(JLabel.CENTER);
 			btnDismiss = new JButton(new ImageIcon(this.getClass().getResource("remove.png")));
 			btnDismiss.addActionListener(new ActionListener(){
 				@Override
 				public void actionPerformed(ActionEvent e) {
-
+					MultiKey key = new MultiKey(parentId, jobName);
+					ProgressItem self = items.get(key);
+					items.remove(key);
+					container.remove(self);
+					container.invalidate();
+					container.validate();
+					container.repaint();
 				}
 			});
 			btnDismiss.setEnabled(false);
-			JPanel pnlStatus = new JPanel(new FlowLayout());
+			JPanel pnlStatus = new JPanel();
+			pnlStatus.setLayout(new BoxLayout(pnlStatus, BoxLayout.LINE_AXIS));
 			pnlStatus.add(lblStatus);
 			pnlStatus.add(btnDismiss);
 			this.add(lblName, BorderLayout.WEST);
 			this.add(pbProgress, BorderLayout.CENTER);
 			this.add(pnlStatus, BorderLayout.EAST);
 			this.setMaximumSize(new Dimension(Integer.MAX_VALUE,32));
+		}
+
+		public void setProgress(final float progress, final int totalFiles, final int successfulFiles) {
+			EventQueue.invokeLater(new Runnable(){
+				@Override
+				public void run() {
+					pbProgress.setValue((int) (progress * 10000.0F));
+					lblStatus.setText(String.format("%d/%d downloaded",successfulFiles,totalFiles)); //TODO: i18n
+					if (progress >= 1) {
+						if (successfulFiles == totalFiles) {
+							lblStatus.setText("Finished"); //TODO: i18n
+						} else {
+							lblStatus.setText((totalFiles - successfulFiles) + " failed!"); //TODO: i18n
+						}
+						btnDismiss.setEnabled(true);
+						active = false;
+					}
+				}
+			});
 		}
 	}
 }

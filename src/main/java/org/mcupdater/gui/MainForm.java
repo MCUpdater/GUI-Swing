@@ -87,7 +87,18 @@ public class MainForm extends MCUApp implements SettingsListener {
 	}
 
 	private void doTesting() {
-		progressView.addProgressBar("Test","Layout test");
+		progressView.addProgressBar("Test","Layout test 1");
+		progressView.addProgressBar("Test","Layout test 2");
+		progressView.addProgressBar("Test","Layout test 3");
+		progressView.addProgressBar("Test","Layout test 4");
+		progressView.addProgressBar("Test","Layout test 5");
+		progressView.addProgressBar("Test","Layout test 6");
+		progressView.addProgressBar("Test","Layout test 7");
+		progressView.addProgressBar("Test","Layout test 8");
+		progressView.addProgressBar("Test","Layout test 9");
+		progressView.addProgressBar("Test","Layout test 10");
+		progressView.updateProgress("Test","Layout test 3", 0.6666F, 2, 1);
+        progressView.updateProgress("Test","Layout test 7", 1F, 10, 10);
 	}
 
 	// Section - GUI elements
