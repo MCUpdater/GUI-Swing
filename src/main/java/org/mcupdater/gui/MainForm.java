@@ -28,6 +28,8 @@ import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -56,6 +58,10 @@ public class MainForm extends MCUApp implements SettingsListener {
 	private ImageIcon RED_FLAG = new ImageIcon(this.getClass().getResource("flag_red.png"));
 	private JLabel lblServerStatus;
 	private ProgressView progressView;
+	private JButton btnUpdate;
+	private JButton btnLaunch;
+	private JButton btnAddURL;
+	private JButton btnSettings;
 
 	public MainForm() {
 		SettingsManager.getInstance().addListener(this);
@@ -78,10 +84,7 @@ public class MainForm extends MCUApp implements SettingsListener {
 		baseLogger.info("Dynatherms connected!");
 		bindLogic();
 		baseLogger.info("Infracells up!");
-		refreshInstanceList();
-		refreshProfileList();
-		String lastProfile = SettingsManager.getInstance().getSettings().getLastProfile();
-		setSelectedInstance(SettingsManager.getInstance().getSettings().findProfile(lastProfile).getLastInstance());
+		settingsChanged(SettingsManager.getInstance().getSettings());
 		frameMain.setVisible(true);
 		doTesting();
 	}
@@ -118,7 +121,7 @@ public class MainForm extends MCUApp implements SettingsListener {
 			JPanel panelButtons = new JPanel();
 			panelButtons.setLayout(new GridLayout(0, 3));
 			{
-				JButton btnAddURL = new JButton();
+				btnAddURL = new JButton();
 				btnAddURL.setIcon(new ImageIcon(this.getClass().getResource("add.png")));
 				btnAddURL.setToolTipText("Add URL");
 				btnAddURL.setVerticalTextPosition(SwingConstants.BOTTOM);
@@ -128,7 +131,7 @@ public class MainForm extends MCUApp implements SettingsListener {
 				btnRefresh.setToolTipText("Refresh");
 				btnRefresh.setVerticalTextPosition(SwingConstants.BOTTOM);
 				btnRefresh.setHorizontalTextPosition(SwingConstants.CENTER);
-				JButton btnSettings = new JButton();
+				btnSettings = new JButton();
 				btnSettings.setIcon(new ImageIcon(this.getClass().getResource("cog.png")));
 				btnSettings.setToolTipText("Settings");
 				btnSettings.setVerticalTextPosition(SwingConstants.BOTTOM);
@@ -177,7 +180,7 @@ public class MainForm extends MCUApp implements SettingsListener {
 			panelStatus.setLayout(new GridBagLayout());
 			{
 				GridBagConstraints gbc = new GridBagConstraints();
-				gbc.insets = new Insets(0,5,0,0);
+				gbc.insets = new Insets(0, 5, 0, 0);
 				JLabel lblMojang = new JLabel("Mojang status -");
 				JLabel lblAuth = new JLabel("Auth:");
 				lblAuth.setIconTextGap(3);
@@ -192,7 +195,7 @@ public class MainForm extends MCUApp implements SettingsListener {
 				panelStatus.add(lblAuth, gbc);
 				panelStatus.add(lblSession, gbc);
 				JSeparator sep = new JSeparator(SwingConstants.VERTICAL);
-				sep.setPreferredSize(new Dimension(5,1));
+				sep.setPreferredSize(new Dimension(5, 1));
 				gbc.fill = GridBagConstraints.VERTICAL;
 				panelStatus.add(sep, gbc);
 				gbc = new GridBagConstraints();
@@ -205,61 +208,83 @@ public class MainForm extends MCUApp implements SettingsListener {
 			panelActions.setLayout(new FlowLayout(FlowLayout.RIGHT, 0, 0));
 			{
 				profileModel = new ProfileModel();
+				JLabel lblProfiles = new JLabel("Profile:");
 				cboProfiles = new JComboBox<>(profileModel);
-				JButton btnUpdate = new JButton("Update");
-				JButton btnLaunch = new JButton("Launch Minecraft");
+				btnUpdate = new JButton("Update");
+				btnLaunch = new JButton("Launch Minecraft");
 
+				panelActions.add(lblProfiles);
 				panelActions.add(cboProfiles);
 				panelActions.add(btnUpdate);
 				panelActions.add(btnLaunch);
 			}
 			panelBottom.add(panelActions, BorderLayout.EAST);
-
-			/*
-			JPanel panelDebug = new JPanel();
-			panelDebug.setLayout(new FlowLayout(FlowLayout.CENTER, 0, 0));
-			{
-				JButton button4 = new JButton();
-				button4.setText("Console Test");
-				button4.addActionListener(new ActionListener() {
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						ConsoleForm.getConsole().log("Out of band message.");
-					}
-				});
-				JButton button5 = new JButton();
-				button5.setText("Undefined");
-				JButton button6 = new JButton();
-				button6.setText("System L&F");
-				button6.addActionListener(new ActionListener() {
-
-					@Override
-					public void actionPerformed(ActionEvent e) {
-						try {
-							UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-							SwingUtilities.updateComponentTreeUI(frameMain);
-						} catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException e1) {
-							e1.printStackTrace();
-						}
-
-					}
-				});
-				panelDebug.add(button4);
-				panelDebug.add(button5);
-				panelDebug.add(button6);
-			}
-			panelBottom.add(panelDebug, BorderLayout.CENTER);
-			*/
 		}
 		frameMain.getContentPane().add(contentPanel, BorderLayout.CENTER);
 
 	}
 
 	private void bindLogic() {
+		btnAddURL.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String newUrl = JOptionPane.showInputDialog(frameMain, "URL for ServerPack XML", "MCUpdater", JOptionPane.PLAIN_MESSAGE);
+				try {
+					Document doc = ServerPackParser.readXmlFromUrl(newUrl);
+					if (!(doc == null)) {
+						Element parent = doc.getDocumentElement();
+						if (parent.getNodeName().equals("ServerPack")) {
+							log("ServerPack definition found for MCU version " + parent.getAttribute("version"));
+							SettingsManager.getInstance().getSettings().addPackURL(newUrl);
+							SettingsManager.getInstance().fireSettingsUpdate();
+						} else {
+							int response = JOptionPane.showConfirmDialog(frameMain, "File is either invalid or complies with MCU 1.0 format.\n\nDo you want to add this URL anyway?", "MCUpdater", JOptionPane.YES_NO_OPTION);
+							if (response == JOptionPane.YES_OPTION) {
+								SettingsManager.getInstance().getSettings().addPackURL(newUrl);
+								SettingsManager.getInstance().fireSettingsUpdate();
+							}
+						}
+					} else {
+						log("Unable to get server information from " + newUrl);
+					}
+				} catch (Exception e1) {
+					baseLogger.warning("Problem reading from " + newUrl + ":\n" + ExceptionUtils.getStackTrace(e1));
+				}
+			}
+		});
 		btnRefresh.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				refreshInstanceList();
+			}
+		});
+		btnSettings.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				SettingsDialog settings = new SettingsDialog();
+				settings.setLocationRelativeTo(frameMain);
+				settings.setVisible(true);
+			}
+		});
+		btnUpdate.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				//TODO
+			}
+		});
+		btnLaunch.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				//TODO
+			}
+		});
+		cboProfiles.addItemListener(new ItemListener() {
+			@Override
+			public void itemStateChanged(ItemEvent e) {
+				try {
+					setSelectedInstance(((Profile)cboProfiles.getSelectedItem()).getLastInstance());
+				} finally {
+				}
 			}
 		});
 	}
@@ -267,7 +292,7 @@ public class MainForm extends MCUApp implements SettingsListener {
 	// Section - Logic elements
 
 	private void setSelectedInstance(String instance) {
-		for (ServerList entry : ((SLListModel)serverList.getModel()).getData()) {
+		for (ServerList entry : slModel.getData()) {
 			if (entry.getServerId().equals(instance)) {
 				serverList.setSelectedValue(entry, true);
 				return;
@@ -409,7 +434,11 @@ public class MainForm extends MCUApp implements SettingsListener {
 
 	@Override
 	public void settingsChanged(Settings newSettings) {
-
+		refreshInstanceList();
+		refreshProfileList();
+		String lastProfile = newSettings.getLastProfile();
+		cboProfiles.setSelectedItem(null);
+		cboProfiles.setSelectedItem(newSettings.findProfile(lastProfile));
 	}
 
 	private final class InstanceListener implements ListSelectionListener {
