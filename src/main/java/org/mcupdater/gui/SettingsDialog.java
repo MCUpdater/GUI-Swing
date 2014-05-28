@@ -132,35 +132,39 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 				GroupLayout layout = new GroupLayout(pnlMinecraft);
 				pnlMinecraft.setLayout(layout);
 				{
+					// Create column groups
+					GroupLayout.Group colLabel = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
+					GroupLayout.Group colContent = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
+
+					GroupLayout.Group rowFullscreen = layout.createParallelGroup(GroupLayout.Alignment.CENTER);
 					JLabel lblFullscreen = new JLabel("Fullscreen: ");
 					chkFullscreen = new JCheckBox();
 					chkFullscreen.setMaximumSize(sizeGuide);
 					lblFullscreen.setLabelFor(chkFullscreen);
+					colLabel.addComponent(lblFullscreen);
+					colContent.addComponent(chkFullscreen);
+					rowFullscreen.addComponent(lblFullscreen).addComponent(chkFullscreen);
 
+					GroupLayout.Group rowWindowWidth = layout.createParallelGroup(GroupLayout.Alignment.BASELINE);
 					JLabel lblWindowWidth = new JLabel("Window Width: ");
 					txtWindowWidth = new JTextField();
 					txtWindowWidth.setMaximumSize(sizeGuide);
 					lblWindowWidth.setLabelFor(txtWindowWidth);
+					colLabel.addComponent(lblWindowWidth);
+					colContent.addComponent(txtWindowWidth);
+					rowWindowWidth.addComponent(lblWindowWidth).addComponent(txtWindowWidth);
 
 					layout.setAutoCreateGaps(true);
 					layout.setAutoCreateContainerGaps(true);
 					layout.setHorizontalGroup(
 							layout.createSequentialGroup()
-							.addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-									.addComponent(lblFullscreen)
-									.addComponent(lblWindowWidth))
-							.addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
-									.addComponent(chkFullscreen)
-									.addComponent(txtWindowWidth))
+							.addGroup(colLabel)
+							.addGroup(colContent)
 					);
 					layout.setVerticalGroup(
 							layout.createSequentialGroup()
-							.addGroup(layout.createParallelGroup(GroupLayout.Alignment.CENTER)
-									.addComponent(lblFullscreen)
-									.addComponent(chkFullscreen))
-							.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-									.addComponent(lblWindowWidth)
-									.addComponent(txtWindowWidth))
+							.addGroup(rowFullscreen)
+							.addGroup(rowWindowWidth)
 					);
 				}
 			}
