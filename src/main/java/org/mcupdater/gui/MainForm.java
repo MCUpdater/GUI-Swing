@@ -79,7 +79,7 @@ public class MainForm extends MCUApp implements SettingsListener {
 		Version.setApp(this);
 		MCUpdater.getInstance().setParent(this);
 		instance = this;
-		baseLogger.info("Activate interlock!");
+		baseLogger.info("Activate interlocks!");
 		initGui();
 		baseLogger.info("Dynatherms connected!");
 		bindLogic();
@@ -87,6 +87,7 @@ public class MainForm extends MCUApp implements SettingsListener {
 		settingsChanged(SettingsManager.getInstance().getSettings());
 		frameMain.setVisible(true);
 		doTesting();
+		baseLogger.info("Megathrusters are go!");
 	}
 
 	private void doTesting() {

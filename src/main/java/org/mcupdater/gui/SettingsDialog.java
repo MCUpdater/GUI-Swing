@@ -10,13 +10,21 @@ import java.awt.*;
 
 public class SettingsDialog extends JDialog implements SettingsListener {
 
-	private final JButton btnOK;
+	private final JButton btnApply;
 	private final JButton btnCancel;
 	private final JButton btnReload;
 	private final JButton btnSave;
 	private final JLabel lblStatus;
 	private final JTextField txtMinMemory;
 	private final JTextField txtMaxMemory;
+	private final JTextField txtPermGen;
+	private final JTextField txtJavaHome;
+	private final JButton btnJavaHomeBrowse;
+	private final JTextField txtJVMOpts;
+	private final JTextField txtWrapper;
+	private final JButton btnWrapperBrowse;
+	private final JCheckBox chkFullscreen;
+	private final JTextField txtWindowWidth;
 
 	public SettingsDialog() {
 		setModalityType(ModalityType.APPLICATION_MODAL);
@@ -37,7 +45,7 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 			lblStatus = new JLabel();
 			btnSave = new JButton("Save");
 			btnReload = new JButton("Reload");
-			btnOK = new JButton("OK");
+			btnApply = new JButton("Apply");
 			btnCancel = new JButton("Cancel");
 			pnlActions.add(new JLabel("Save status: "), gbcNormal);
 			pnlActions.add(lblStatus, gbcFillWidth);
@@ -46,12 +54,13 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 			JSeparator sep = new JSeparator(SwingConstants.VERTICAL);
 			sep.setPreferredSize(new Dimension(5, 1));
 			pnlActions.add(sep, gbcFillHeight);
-			pnlActions.add(btnOK, gbcNormal);
+			pnlActions.add(btnApply, gbcNormal);
 			pnlActions.add(btnCancel, gbcNormal);
 			pnlActions.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.BLACK));
 		}
 		JTabbedPane pnlTabs = new JTabbedPane();
 		{
+			Dimension sizeGuide;
 			JPanel pnlJava = new JPanel();
 			{
 				pnlJava.setLayout(new SpringLayout());
@@ -60,7 +69,7 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 					rows++;
 					JLabel lblMinMemory = new JLabel("Minimum Memory: ");
 					txtMinMemory = new JTextField();
-					Dimension sizeGuide = new Dimension(Integer.MAX_VALUE, txtMinMemory.getMinimumSize().height);
+					sizeGuide = new Dimension(Integer.MAX_VALUE, txtMinMemory.getMinimumSize().height);
 					txtMinMemory.setMaximumSize(sizeGuide);
 					lblMinMemory.setLabelFor(txtMinMemory);
 					pnlJava.add(lblMinMemory);
@@ -74,15 +83,89 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 					pnlJava.add(lblMaxMemory);
 					pnlJava.add(txtMaxMemory);
 
+					rows++;
+					JLabel lblPermGen = new JLabel("PermGen Space: ");
+					txtPermGen = new JTextField();
+					txtPermGen.setMaximumSize(sizeGuide);
+					lblPermGen.setLabelFor(txtPermGen);
+					pnlJava.add(lblPermGen);
+					pnlJava.add(txtPermGen);
+
+					rows++;
+					JLabel lblJavaHome = new JLabel("Java Home Path: ");
+					JPanel pnlJavaHome = new JPanel(new BorderLayout());
+					txtJavaHome = new JTextField();
+					pnlJavaHome.setMaximumSize(sizeGuide);
+					lblPermGen.setLabelFor(txtJavaHome);
+					btnJavaHomeBrowse = new JButton(new ImageIcon(this.getClass().getResource("folder_explore.png")));
+					pnlJava.add(lblJavaHome);
+					pnlJavaHome.add(txtJavaHome, BorderLayout.CENTER);
+					pnlJavaHome.add(btnJavaHomeBrowse, BorderLayout.EAST);
+					pnlJava.add(pnlJavaHome);
+
+					rows++;
+					JLabel lblJVMOpts = new JLabel("JVMOpts: ");
+					txtJVMOpts = new JTextField();
+					txtJVMOpts.setMaximumSize(sizeGuide);
+					lblJVMOpts.setLabelFor(txtJVMOpts);
+					pnlJava.add(lblJVMOpts);
+					pnlJava.add(txtJVMOpts);
+
+					rows++;
+					JLabel lblWrapper = new JLabel("Program Wrapper: ");
+					JPanel pnlWrapper = new JPanel(new BorderLayout());
+					txtWrapper = new JTextField();
+					pnlWrapper.setMaximumSize(sizeGuide);
+					lblWrapper.setLabelFor(txtWrapper);
+					btnWrapperBrowse = new JButton(new ImageIcon(this.getClass().getResource("folder_explore.png")));
+					pnlJava.add(lblWrapper);
+					pnlWrapper.add(txtWrapper, BorderLayout.CENTER);
+					pnlWrapper.add(btnWrapperBrowse, BorderLayout.EAST);
+					pnlJava.add(pnlWrapper);
 				}
-				pnlJava.setMaximumSize(new Dimension(Integer.MAX_VALUE, (txtMinMemory.getMinimumSize().height + 3) * rows));
 				SpringUtilities.makeCompactGrid(pnlJava, rows, 2, 6, 6, 6, 6);
 			}
 			pnlTabs.add("Java", new JScrollPane(pnlJava));
-			pnlTabs.add("Minecraft", new JPanel());
+
+			JPanel pnlMinecraft = new JPanel();
+			{
+				GroupLayout layout = new GroupLayout(pnlMinecraft);
+				pnlMinecraft.setLayout(layout);
+				{
+					JLabel lblFullscreen = new JLabel("Fullscreen: ");
+					chkFullscreen = new JCheckBox();
+					chkFullscreen.setMaximumSize(sizeGuide);
+					lblFullscreen.setLabelFor(chkFullscreen);
+
+					JLabel lblWindowWidth = new JLabel("Window Width: ");
+					txtWindowWidth = new JTextField();
+					txtWindowWidth.setMaximumSize(sizeGuide);
+					lblWindowWidth.setLabelFor(txtWindowWidth);
+
+					layout.setAutoCreateGaps(true);
+					layout.setAutoCreateContainerGaps(true);
+					layout.setHorizontalGroup(
+							layout.createSequentialGroup()
+							.addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+									.addComponent(lblFullscreen)
+									.addComponent(lblWindowWidth))
+							.addGroup(layout.createParallelGroup(GroupLayout.Alignment.LEADING)
+									.addComponent(chkFullscreen)
+									.addComponent(txtWindowWidth))
+					);
+					layout.setVerticalGroup(
+							layout.createSequentialGroup()
+							.addGroup(layout.createParallelGroup(GroupLayout.Alignment.CENTER)
+									.addComponent(lblFullscreen)
+									.addComponent(chkFullscreen))
+							.addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+									.addComponent(lblWindowWidth)
+									.addComponent(txtWindowWidth))
+					);
+				}
+			}
+			pnlTabs.add("Minecraft", new JScrollPane(pnlMinecraft));
 			pnlTabs.add("MCUpdater", new JPanel());
-			pnlTabs.add("Profiles", new JPanel());
-			pnlTabs.add("Pack URLs", new JPanel());
 		}
 		getContentPane().add(pnlTabs, BorderLayout.CENTER);
 		getContentPane().add(pnlActions, BorderLayout.SOUTH);
@@ -95,6 +178,12 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		Settings current = SettingsManager.getInstance().getSettings();
 		txtMinMemory.setText(current.getMinMemory());
 		txtMaxMemory.setText(current.getMaxMemory());
+		txtPermGen.setText(current.getPermGen());
+		txtJavaHome.setText(current.getJrePath());
+		txtJVMOpts.setText(current.getJvmOpts());
+		txtWrapper.setText(current.getProgramWrapper());
+		chkFullscreen.setSelected(current.isFullScreen());
+		txtWindowWidth.setText(String.valueOf(current.getResWidth()));
 	}
 
 	@Override
