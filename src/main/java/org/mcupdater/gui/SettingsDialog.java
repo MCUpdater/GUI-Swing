@@ -1,6 +1,6 @@
 package org.mcupdater.gui;
 
-import layout.SpringUtilities;
+import org.mcupdater.settings.Profile;
 import org.mcupdater.settings.Settings;
 import org.mcupdater.settings.SettingsListener;
 import org.mcupdater.settings.SettingsManager;
@@ -28,6 +28,16 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 	private final JTextField txtWindowHeight;
 	private final JCheckBox chkAutoconnect;
 	private final JCheckBox chkMinimize;
+	private final JCheckBox chkConsoleOutput;
+	private final JList<Profile> lstProfiles;
+	private final JButton btnProfileAdd;
+	private final JButton btnProfileRemove;
+	private final JList<String> lstPacks;
+	private final JButton btnPackAdd;
+	private final JButton btnPackRemove;
+	private final JButton btnClearCache;
+	private final JButton btnResetSettings;
+	private ProfileModel profileModel;
 
 	public SettingsDialog() {
 		setModalityType(ModalityType.APPLICATION_MODAL);
@@ -66,67 +76,93 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 			Dimension sizeGuide;
 			JPanel pnlJava = new JPanel();
 			{
-				pnlJava.setLayout(new SpringLayout());
-				int rows = 0;
+				GroupLayout layout = new GroupLayout(pnlJava);
+				pnlJava.setLayout(layout);
 				{
-					rows++;
+					// Create column groups
+					GroupLayout.Group colLabel = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
+					GroupLayout.Group colContent = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
+
+					GroupLayout.Group rowMinMemory = layout.createParallelGroup(GroupLayout.Alignment.CENTER);
 					JLabel lblMinMemory = new JLabel("Minimum Memory: ");
 					txtMinMemory = new JTextField();
 					sizeGuide = new Dimension(Integer.MAX_VALUE, txtMinMemory.getMinimumSize().height);
 					txtMinMemory.setMaximumSize(sizeGuide);
 					lblMinMemory.setLabelFor(txtMinMemory);
-					pnlJava.add(lblMinMemory);
-					pnlJava.add(txtMinMemory);
+					colLabel.addComponent(lblMinMemory);
+					colContent.addComponent(txtMinMemory);
+					rowMinMemory.addComponent(lblMinMemory).addComponent(txtMinMemory);
 
-					rows++;
+					GroupLayout.Group rowMaxMemory = layout.createParallelGroup(GroupLayout.Alignment.CENTER);
 					JLabel lblMaxMemory = new JLabel("Maximum Memory: ");
 					txtMaxMemory = new JTextField();
 					txtMaxMemory.setMaximumSize(sizeGuide);
 					lblMaxMemory.setLabelFor(txtMaxMemory);
-					pnlJava.add(lblMaxMemory);
-					pnlJava.add(txtMaxMemory);
+					colLabel.addComponent(lblMaxMemory);
+					colContent.addComponent(txtMaxMemory);
+					rowMaxMemory.addComponent(lblMaxMemory).addComponent(txtMaxMemory);
 
-					rows++;
+					GroupLayout.Group rowPermGen = layout.createParallelGroup(GroupLayout.Alignment.CENTER);
 					JLabel lblPermGen = new JLabel("PermGen Space: ");
 					txtPermGen = new JTextField();
 					txtPermGen.setMaximumSize(sizeGuide);
 					lblPermGen.setLabelFor(txtPermGen);
-					pnlJava.add(lblPermGen);
-					pnlJava.add(txtPermGen);
+					colLabel.addComponent(lblPermGen);
+					colContent.addComponent(txtPermGen);
+					rowPermGen.addComponent(lblPermGen).addComponent(txtPermGen);
 
-					rows++;
+					GroupLayout.Group rowJavaHome = layout.createParallelGroup(GroupLayout.Alignment.CENTER);
 					JLabel lblJavaHome = new JLabel("Java Home Path: ");
 					JPanel pnlJavaHome = new JPanel(new BorderLayout());
 					txtJavaHome = new JTextField();
 					pnlJavaHome.setMaximumSize(sizeGuide);
 					lblPermGen.setLabelFor(txtJavaHome);
 					btnJavaHomeBrowse = new JButton(new ImageIcon(this.getClass().getResource("folder_explore.png")));
-					pnlJava.add(lblJavaHome);
 					pnlJavaHome.add(txtJavaHome, BorderLayout.CENTER);
 					pnlJavaHome.add(btnJavaHomeBrowse, BorderLayout.EAST);
-					pnlJava.add(pnlJavaHome);
+					colLabel.addComponent(lblJavaHome);
+					colContent.addComponent(pnlJavaHome);
+					rowJavaHome.addComponent(lblJavaHome).addComponent(pnlJavaHome);
 
-					rows++;
+					GroupLayout.Group rowJVMOpts = layout.createParallelGroup(GroupLayout.Alignment.CENTER);
 					JLabel lblJVMOpts = new JLabel("JVMOpts: ");
 					txtJVMOpts = new JTextField();
 					txtJVMOpts.setMaximumSize(sizeGuide);
 					lblJVMOpts.setLabelFor(txtJVMOpts);
-					pnlJava.add(lblJVMOpts);
-					pnlJava.add(txtJVMOpts);
+					colLabel.addComponent(lblJVMOpts);
+					colContent.addComponent(txtJVMOpts);
+					rowJVMOpts.addComponent(lblJVMOpts).addComponent(txtJVMOpts);
 
-					rows++;
+					GroupLayout.Group rowWrapper = layout.createParallelGroup(GroupLayout.Alignment.CENTER);
 					JLabel lblWrapper = new JLabel("Program Wrapper: ");
 					JPanel pnlWrapper = new JPanel(new BorderLayout());
 					txtWrapper = new JTextField();
 					pnlWrapper.setMaximumSize(sizeGuide);
 					lblWrapper.setLabelFor(txtWrapper);
 					btnWrapperBrowse = new JButton(new ImageIcon(this.getClass().getResource("folder_explore.png")));
-					pnlJava.add(lblWrapper);
 					pnlWrapper.add(txtWrapper, BorderLayout.CENTER);
 					pnlWrapper.add(btnWrapperBrowse, BorderLayout.EAST);
-					pnlJava.add(pnlWrapper);
+					colLabel.addComponent(lblWrapper);
+					colContent.addComponent(pnlWrapper);
+					rowWrapper.addComponent(lblWrapper).addComponent(pnlWrapper);
+
+					layout.setAutoCreateGaps(true);
+					layout.setAutoCreateContainerGaps(true);
+					layout.setHorizontalGroup(
+							layout.createSequentialGroup()
+									.addGroup(colLabel)
+									.addGroup(colContent)
+					);
+					layout.setVerticalGroup(
+							layout.createSequentialGroup()
+									.addGroup(rowMinMemory)
+									.addGroup(rowMaxMemory)
+									.addGroup(rowPermGen)
+									.addGroup(rowJavaHome)
+									.addGroup(rowJVMOpts)
+									.addGroup(rowWrapper)
+					);
 				}
-				SpringUtilities.makeCompactGrid(pnlJava, rows, 2, 6, 6, 6, 6);
 			}
 			pnlTabs.add("Java", new JScrollPane(pnlJava));
 
@@ -182,7 +218,16 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 					lblMinimize.setLabelFor(chkMinimize);
 					colLabel.addComponent(lblMinimize);
 					colContent.addComponent(chkMinimize);
-					rowAutoconnect.addComponent(lblMinimize).addComponent(chkMinimize);
+					rowMinimize.addComponent(lblMinimize).addComponent(chkMinimize);
+
+					GroupLayout.Group rowConsoleOutput = layout.createParallelGroup(GroupLayout.Alignment.CENTER);
+					JLabel lblConsoleOutput = new JLabel("Minecraft Output to Console: ");
+					chkConsoleOutput = new JCheckBox();
+					chkConsoleOutput.setMaximumSize(sizeGuide);
+					lblConsoleOutput.setLabelFor(chkConsoleOutput);
+					colLabel.addComponent(lblConsoleOutput);
+					colContent.addComponent(chkConsoleOutput);
+					rowConsoleOutput.addComponent(lblConsoleOutput).addComponent(chkConsoleOutput);
 
 					layout.setAutoCreateGaps(true);
 					layout.setAutoCreateContainerGaps(true);
@@ -198,11 +243,78 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 							.addGroup(rowWindowHeight)
 							.addGroup(rowAutoconnect)
 							.addGroup(rowMinimize)
+							.addGroup(rowConsoleOutput)
 					);
 				}
 			}
 			pnlTabs.add("Minecraft", new JScrollPane(pnlMinecraft));
-			pnlTabs.add("MCUpdater", new JPanel());
+
+			JPanel pnlMCU = new JPanel();
+			{
+				GroupLayout layout = new GroupLayout(pnlMCU);
+				pnlMCU.setLayout(layout);
+				{
+					// Create column groups
+					GroupLayout.Group colLabel = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
+					GroupLayout.Group colContent = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
+
+					GroupLayout.Group rowProfiles = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
+					JLabel lblProfiles = new JLabel("Profiles: ");
+					JPanel pnlProfiles = new JPanel(new BorderLayout());
+					lstProfiles = new JList<>();
+					profileModel = new ProfileModel();
+					lstProfiles.setModel(profileModel);
+					pnlProfiles.add(lstProfiles, BorderLayout.CENTER);
+					JPanel pnlProfileActions = new JPanel();
+					pnlProfileActions.setLayout(new GridLayout(6, 1));
+					btnProfileAdd = new JButton("Add");
+					btnProfileRemove = new JButton("Remove");
+					pnlProfileActions.add(btnProfileAdd);
+					pnlProfileActions.add(btnProfileRemove);
+					pnlProfiles.add(pnlProfileActions, BorderLayout.EAST);
+					colLabel.addComponent(lblProfiles);
+					colContent.addComponent(pnlProfiles);
+					rowProfiles.addComponent(lblProfiles).addComponent(pnlProfiles);
+
+					GroupLayout.Group rowPacks = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
+					JLabel lblPacks = new JLabel("Pack URLs: ");
+					JPanel pnlPacks = new JPanel(new BorderLayout());
+					lstPacks = new JList<>();
+					pnlPacks.add(lstPacks, BorderLayout.CENTER);
+					JPanel pnlPackActions = new JPanel();
+					pnlPackActions.setLayout(new GridLayout(6, 1));
+					btnPackAdd = new JButton("Add");
+					btnPackRemove = new JButton("Remove");
+					pnlPackActions.add(btnPackAdd);
+					pnlPackActions.add(btnPackRemove);
+					pnlPacks.add(pnlPackActions, BorderLayout.EAST);
+					colLabel.addComponent(lblPacks);
+					colContent.addComponent(pnlPacks);
+					rowPacks.addComponent(lblPacks).addComponent(pnlPacks);
+
+					btnClearCache = new JButton("Clear cache");
+					btnResetSettings = new JButton("Reset settings");
+
+					layout.setAutoCreateGaps(true);
+					layout.setAutoCreateContainerGaps(true);
+					layout.setHorizontalGroup(
+							layout.createParallelGroup()
+									.addGroup(layout.createSequentialGroup()
+											.addGroup(colLabel)
+											.addGroup(colContent))
+							.addComponent(btnClearCache)
+							.addComponent(btnResetSettings)
+					);
+					layout.setVerticalGroup(
+							layout.createSequentialGroup()
+									.addGroup(rowProfiles)
+									.addGroup(rowPacks)
+							.addComponent(btnClearCache)
+							.addComponent(btnResetSettings)
+					);
+				}
+			}
+			pnlTabs.add("MCUpdater", new JScrollPane(pnlMCU));
 		}
 		getContentPane().add(pnlTabs, BorderLayout.CENTER);
 		getContentPane().add(pnlActions, BorderLayout.SOUTH);
@@ -224,6 +336,9 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		txtWindowHeight.setText(String.valueOf(current.getResHeight()));
 		chkAutoconnect.setSelected(current.isAutoConnect());
 		chkMinimize.setSelected(current.isMinimizeOnLaunch());
+		chkConsoleOutput.setSelected(current.isMinecraftToConsole());
+		profileModel.clearAndSet(current.getProfiles());
+		lstPacks.setListData(current.getPackURLs().toArray(new String[0]));
 	}
 
 	@Override
