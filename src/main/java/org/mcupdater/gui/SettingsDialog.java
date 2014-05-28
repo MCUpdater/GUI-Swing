@@ -25,6 +25,9 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 	private final JButton btnWrapperBrowse;
 	private final JCheckBox chkFullscreen;
 	private final JTextField txtWindowWidth;
+	private final JTextField txtWindowHeight;
+	private final JCheckBox chkAutoconnect;
+	private final JCheckBox chkMinimize;
 
 	public SettingsDialog() {
 		setModalityType(ModalityType.APPLICATION_MODAL);
@@ -154,6 +157,33 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 					colContent.addComponent(txtWindowWidth);
 					rowWindowWidth.addComponent(lblWindowWidth).addComponent(txtWindowWidth);
 
+					GroupLayout.Group rowWindowHeight = layout.createParallelGroup(GroupLayout.Alignment.BASELINE);
+					JLabel lblWindowHeight = new JLabel("Window Height: ");
+					txtWindowHeight = new JTextField();
+					txtWindowHeight.setMaximumSize(sizeGuide);
+					lblWindowHeight.setLabelFor(txtWindowHeight);
+					colLabel.addComponent(lblWindowHeight);
+					colContent.addComponent(txtWindowHeight);
+					rowWindowHeight.addComponent(lblWindowHeight).addComponent(txtWindowHeight);
+
+					GroupLayout.Group rowAutoconnect = layout.createParallelGroup(GroupLayout.Alignment.CENTER);
+					JLabel lblAutoconnect = new JLabel("Automatically Connect: ");
+					chkAutoconnect = new JCheckBox();
+					chkAutoconnect.setMaximumSize(sizeGuide);
+					lblAutoconnect.setLabelFor(chkAutoconnect);
+					colLabel.addComponent(lblAutoconnect);
+					colContent.addComponent(chkAutoconnect);
+					rowAutoconnect.addComponent(lblAutoconnect).addComponent(chkAutoconnect);
+
+					GroupLayout.Group rowMinimize = layout.createParallelGroup(GroupLayout.Alignment.CENTER);
+					JLabel lblMinimize = new JLabel("Minimize on Launch: ");
+					chkMinimize = new JCheckBox();
+					chkMinimize.setMaximumSize(sizeGuide);
+					lblMinimize.setLabelFor(chkMinimize);
+					colLabel.addComponent(lblMinimize);
+					colContent.addComponent(chkMinimize);
+					rowAutoconnect.addComponent(lblMinimize).addComponent(chkMinimize);
+
 					layout.setAutoCreateGaps(true);
 					layout.setAutoCreateContainerGaps(true);
 					layout.setHorizontalGroup(
@@ -165,6 +195,9 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 							layout.createSequentialGroup()
 							.addGroup(rowFullscreen)
 							.addGroup(rowWindowWidth)
+							.addGroup(rowWindowHeight)
+							.addGroup(rowAutoconnect)
+							.addGroup(rowMinimize)
 					);
 				}
 			}
@@ -188,6 +221,9 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		txtWrapper.setText(current.getProgramWrapper());
 		chkFullscreen.setSelected(current.isFullScreen());
 		txtWindowWidth.setText(String.valueOf(current.getResWidth()));
+		txtWindowHeight.setText(String.valueOf(current.getResHeight()));
+		chkAutoconnect.setSelected(current.isAutoConnect());
+		chkMinimize.setSelected(current.isMinimizeOnLaunch());
 	}
 
 	@Override
