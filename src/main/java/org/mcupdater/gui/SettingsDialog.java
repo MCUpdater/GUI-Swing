@@ -7,6 +7,9 @@ import org.mcupdater.settings.SettingsManager;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.List;
 
 public class SettingsDialog extends JDialog implements SettingsListener {
 
@@ -37,6 +40,7 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 	private final JButton btnPackRemove;
 	private final JButton btnClearCache;
 	private final JButton btnResetSettings;
+	private final JButton btnClearStale;
 	private ProfileModel profileModel;
 
 	public SettingsDialog() {
@@ -47,6 +51,8 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		getContentPane().setLayout(new BorderLayout());
 		setIconImage(new ImageIcon(this.getClass().getResource("mcu-icon.png")).getImage());
 		setSize(700, 500);
+
+		//Init GUI
 		JPanel pnlActions = new JPanel(new GridBagLayout());
 		{
 			GridBagConstraints gbcFillWidth = new GridBagConstraints();
@@ -292,7 +298,8 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 					colContent.addComponent(pnlPacks);
 					rowPacks.addComponent(lblPacks).addComponent(pnlPacks);
 
-					btnClearCache = new JButton("Clear cache");
+					btnClearCache = new JButton("Clear all cache");
+					btnClearStale = new JButton("Clear stale cache");
 					btnResetSettings = new JButton("Reset settings");
 
 					layout.setAutoCreateGaps(true);
@@ -302,15 +309,17 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 									.addGroup(layout.createSequentialGroup()
 											.addGroup(colLabel)
 											.addGroup(colContent))
-							.addComponent(btnClearCache)
-							.addComponent(btnResetSettings)
+									.addComponent(btnClearCache)
+									.addComponent(btnClearStale)
+									.addComponent(btnResetSettings)
 					);
 					layout.setVerticalGroup(
 							layout.createSequentialGroup()
 									.addGroup(rowProfiles)
 									.addGroup(rowPacks)
-							.addComponent(btnClearCache)
-							.addComponent(btnResetSettings)
+									.addComponent(btnClearCache)
+									.addComponent(btnClearStale)
+									.addComponent(btnResetSettings)
 					);
 				}
 			}
@@ -319,8 +328,89 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		getContentPane().add(pnlTabs, BorderLayout.CENTER);
 		getContentPane().add(pnlActions, BorderLayout.SOUTH);
 
-		lblStatus.setText(SettingsManager.getInstance().isDirty() ? "Not Saved" : "Saved");
+		initLogic();
 		updateValues();
+	}
+
+	private void initLogic() {
+		btnSave.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+			}
+		});
+		btnReload.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+			}
+		});
+		btnApply.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+			}
+		});
+		btnCancel.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+			}
+		});
+		btnJavaHomeBrowse.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+			}
+		});
+		btnWrapperBrowse.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+			}
+		});
+		btnProfileAdd.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+			}
+		});
+		btnProfileRemove.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+			}
+		});
+		btnPackAdd.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+			}
+		});
+		btnPackRemove.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+			}
+		});
+		btnClearCache.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+			}
+		});
+		btnClearStale.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+			}
+		});
+		btnResetSettings.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+
+			}
+		});
 	}
 
 	private void updateValues() {
@@ -338,7 +428,9 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		chkMinimize.setSelected(current.isMinimizeOnLaunch());
 		chkConsoleOutput.setSelected(current.isMinecraftToConsole());
 		profileModel.clearAndSet(current.getProfiles());
-		lstPacks.setListData(current.getPackURLs().toArray(new String[0]));
+		List<String> packURLs = current.getPackURLs();
+		lstPacks.setListData(packURLs.toArray(new String[packURLs.size()]));
+		lblStatus.setText(SettingsManager.getInstance().isDirty() ? "Not Saved" : "Saved");
 	}
 
 	@Override
