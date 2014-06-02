@@ -36,6 +36,32 @@ public class ProgressView extends JPanel {
 		bar.setProgress(newProgress, totalFiles, successfulFiles);
 	}
 
+	public int getActiveCount() {
+		int activeCount = 0;
+		synchronized (this) {
+			for (Map.Entry<MultiKey, ProgressItem> item : items.entrySet()) {
+				if (item.getValue().isActive()) {
+					activeCount++;
+				}
+			}
+		}
+		return activeCount;
+	}
+
+	public int getActiveById(String serverId) {
+		int activeCount = 0;
+		synchronized (this) {
+			for (Map.Entry<MultiKey, ProgressItem> item : items.entrySet()) {
+				if (item.getKey().getParent().equals(serverId)) {
+					if (item.getValue().isActive()) {
+						activeCount++;
+					}
+				}
+			}
+		}
+		return activeCount;
+	}
+
 	private class MultiKey
 	{
 		private final String parent;
@@ -129,6 +155,10 @@ public class ProgressView extends JPanel {
 					}
 				}
 			});
+		}
+
+		public boolean isActive() {
+			return active;
 		}
 	}
 }

@@ -1,8 +1,7 @@
 package org.mcupdater.gui;
 
-import auth.MinecraftLoginService;
+import org.mcupdater.auth.MinecraftLoginService;
 import org.jdesktop.swingx.JXLoginPane;
-import org.jdesktop.swingx.JXLoginPane.*;
 import org.mcupdater.Yggdrasil.SessionResponse;
 import org.mcupdater.settings.Profile;
 import org.mcupdater.settings.Settings;
@@ -14,7 +13,6 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -40,7 +38,6 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 	private final JCheckBox chkAutoconnect;
 	private final JCheckBox chkMinimize;
 	private final JCheckBox chkConsoleOutput;
-	private final JList<Profile> lstProfiles;
 	private final JButton btnProfileAdd;
 	private final JButton btnProfileRemove;
 	private final JList<String> lstPacks;
@@ -293,7 +290,7 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 					GroupLayout.Group rowProfiles = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
 					JLabel lblProfiles = new JLabel("Profiles: ");
 					JPanel pnlProfiles = new JPanel(new BorderLayout());
-					lstProfiles = new JList<>();
+					JList<Profile> lstProfiles = new JList<>();
 					profileModel = new ProfileModel();
 					lstProfiles.setModel(profileModel);
 					pnlProfiles.add(lstProfiles, BorderLayout.CENTER);
@@ -410,7 +407,8 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				JFileChooser jfcJRE = new JFileChooser(txtJavaHome.getText());
-				jfcJRE.setDialogType(JFileChooser.DIRECTORIES_ONLY);
+				jfcJRE.setDialogType(JFileChooser.CUSTOM_DIALOG);
+				jfcJRE.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 				jfcJRE.setDialogTitle("Path to Java");
 				int choice = jfcJRE.showDialog(self, "Select");
 				if (choice == JFileChooser.APPROVE_OPTION) {
@@ -426,13 +424,31 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				JFileChooser jfcWrapper = new JFileChooser(txtWrapper.getText());
-				jfcWrapper.setDialogType(JFileChooser.FILES_ONLY);
-				int choice = jfcWrapper.showOpenDialog(self);
+				jfcWrapper.setDialogType(JFileChooser.CUSTOM_DIALOG);
+				jfcWrapper.setFileSelectionMode(JFileChooser.FILES_ONLY);
+				int choice = jfcWrapper.showDialog(self, "Select");
 				if (choice == JFileChooser.APPROVE_OPTION) {
 					try {
 						txtWrapper.setText(jfcWrapper.getSelectedFile().getCanonicalPath());
 					} catch (IOException e1) {
-						MainForm.getInstance().baseLogger.log(Level.SEVERE, "Error occurred while getting JRE path!", e1);
+						MainForm.getInstance().baseLogger.log(Level.SEVERE, "Error occurred while getting wrapper path!", e1);
+					}
+				}
+			}
+		});
+		btnInstanceRootBrowse.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JFileChooser jfcInstance = new JFileChooser(txtInstanceRoot.getText());
+				jfcInstance.setDialogType(JFileChooser.CUSTOM_DIALOG);
+				jfcInstance.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+				jfcInstance.setDialogTitle("Select new instance root");
+				int choice = jfcInstance.showDialog(self, "Select");
+				if (choice == JFileChooser.APPROVE_OPTION) {
+					try {
+						txtInstanceRoot.setText(jfcInstance.getSelectedFile().getCanonicalPath());
+					} catch (IOException e1) {
+						MainForm.getInstance().baseLogger.log(Level.SEVERE, "Error occurred while getting instance path!", e1);
 					}
 				}
 			}
@@ -470,13 +486,18 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		btnPackAdd.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-
+				String newURL = JOptionPane.showInputDialog(self, "Enter new ServerPack URL", "MCUpdater", JOptionPane.PLAIN_MESSAGE);
+				SettingsManager.getInstance().getSettings().addPackURL(newURL);
+				SettingsManager.getInstance().fireSettingsUpdate();
+				SettingsManager.getInstance().setDirty();
 			}
 		});
 		btnPackRemove.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-
+				SettingsManager.getInstance().getSettings().removePackUrl(lstPacks.getSelectedValue());
+				SettingsManager.getInstance().fireSettingsUpdate();
+				SettingsManager.getInstance().setDirty();
 			}
 		});
 		btnClearCache.addActionListener(new ActionListener() {

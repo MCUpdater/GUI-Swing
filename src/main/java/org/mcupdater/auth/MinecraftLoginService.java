@@ -1,4 +1,4 @@
-package auth;
+package org.mcupdater.auth;
 
 import org.jdesktop.swingx.JXLoginPane;
 import org.jdesktop.swingx.auth.LoginService;

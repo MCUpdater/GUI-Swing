@@ -7,15 +7,14 @@ import java.awt.*;
 import java.util.logging.Level;
 
 public class ConsoleForm {
-	private static ConsoleForm INSTANCE;
 	private final CALogHandler consoleHandler;
 	private final ConsoleArea console;
+	private final JFrame window;
 
-	public ConsoleForm() {
-		INSTANCE = this;
-		JFrame window = new JFrame();
+	public ConsoleForm(String title) {
+		window = new JFrame();
 		window.setIconImage(new ImageIcon(this.getClass().getResource("mcu-icon.png")).getImage());
-		window.setTitle("MCU Console");
+		window.setTitle(title);
 		window.setBounds(25, 25, 500, 500);
 		window.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		console = new ConsoleArea();
@@ -28,11 +27,15 @@ public class ConsoleForm {
 		MCUpdater.apiLogger.addHandler(consoleHandler);
 	}
 
-	public static ConsoleArea getConsole() {
-		return INSTANCE.console;
+	public ConsoleArea getConsole() {
+		return console;
 	}
 
-	public static CALogHandler getHandler() {
-		return INSTANCE.consoleHandler;
+	public CALogHandler getHandler() {
+		return consoleHandler;
+	}
+
+	public void allowClose() {
+		window.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 	}
 }

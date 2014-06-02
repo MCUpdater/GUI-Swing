@@ -1,14 +1,20 @@
 package org.mcupdater.gui;
 
 import com.google.gson.Gson;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.text.StrSubstitutor;
 import org.mcupdater.FMLStyleFormatter;
 import org.mcupdater.MCUApp;
 import org.mcupdater.api.Version;
 import org.mcupdater.downloadlib.DownloadQueue;
 import org.mcupdater.downloadlib.Downloadable;
+import org.mcupdater.downloadlib.TrackerListener;
 import org.mcupdater.instance.Instance;
 import org.mcupdater.model.*;
+import org.mcupdater.mojang.AssetIndex;
+import org.mcupdater.mojang.AssetManager;
+import org.mcupdater.mojang.Library;
 import org.mcupdater.mojang.MinecraftVersion;
 import org.mcupdater.settings.Profile;
 import org.mcupdater.settings.Settings;
@@ -33,6 +39,9 @@ import java.awt.event.ItemListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,7 +51,7 @@ import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class MainForm extends MCUApp implements SettingsListener {
+public class MainForm extends MCUApp implements SettingsListener, TrackerListener {
 	private static MainForm instance;
 	private JFrame frameMain;
 	private SLListModel slModel;
@@ -57,11 +66,15 @@ public class MainForm extends MCUApp implements SettingsListener {
 	private ImageIcon GREEN_FLAG = new ImageIcon(this.getClass().getResource("flag_green.png"));
 	private ImageIcon RED_FLAG = new ImageIcon(this.getClass().getResource("flag_red.png"));
 	private JLabel lblServerStatus;
-	private ProgressView progressView;
+	private final ProgressView progressView = new ProgressView();
 	private JButton btnUpdate;
 	private JButton btnLaunch;
 	private JButton btnAddURL;
 	private JButton btnSettings;
+	private int updateCounter = 0;
+	private boolean playing;
+	private JTabbedPane instanceTabs;
+	private JScrollPane progressScroller;
 
 	public MainForm() {
 		SettingsManager.getInstance().addListener(this);
@@ -75,7 +88,7 @@ public class MainForm extends MCUApp implements SettingsListener {
 		} catch (SecurityException | IOException e) {
 			e.printStackTrace();
 		}
-		baseLogger.addHandler(ConsoleForm.getHandler());
+		baseLogger.addHandler(Main.mcuConsole.getHandler());
 		Version.setApp(this);
 		MCUpdater.getInstance().setParent(this);
 		instance = this;
@@ -86,8 +99,57 @@ public class MainForm extends MCUApp implements SettingsListener {
 		baseLogger.info("Infracells up!");
 		settingsChanged(SettingsManager.getInstance().getSettings());
 		frameMain.setVisible(true);
-		doTesting();
+		//doTesting();
 		baseLogger.info("Megathrusters are go!");
+		Thread daemonMonitor = new Thread() {
+			private ServerList currentSelection;
+			private int activeJobs = 0;
+			private boolean playState;
+
+			@SuppressWarnings("InfiniteLoopStatement")
+			@Override
+			public void run() {
+				while (true) {
+					try {
+						if (activeJobs != progressView.getActiveCount() || currentSelection != serverList.getSelectedValue() || playState != isPlaying()) {
+							currentSelection = serverList.getSelectedValue();
+							activeJobs = progressView.getActiveCount();
+							playState = isPlaying();
+							SwingUtilities.invokeAndWait( new Runnable() {
+								@Override
+								public void run() {
+									instanceTabs.setTitleAt(instanceTabs.indexOfComponent(progressScroller),"Progress - " + activeJobs + " active");
+									if (activeJobs > 0) {
+										btnLaunch.setEnabled(false);
+									} else {
+										if (!(currentSelection == null) && !playState) {
+											btnLaunch.setEnabled(true);
+										} else {
+											btnLaunch.setEnabled(false);
+										}
+									}
+									if (!(currentSelection == null)) {
+										if (progressView.getActiveById(currentSelection.getServerId()) > 0 || playState) {
+											btnUpdate.setEnabled(false);
+										} else {
+											btnUpdate.setEnabled(true);
+										}
+									} else {
+										btnUpdate.setEnabled(false);
+									}
+
+								}
+							});
+						}
+						sleep(500);
+					} catch (Exception e) {
+						baseLogger.log(Level.SEVERE, e.getMessage(), e);
+					}
+				}
+			}
+		};
+		daemonMonitor.setDaemon(true);
+		daemonMonitor.start();
 	}
 
 	private void doTesting() {
@@ -160,16 +222,18 @@ public class MainForm extends MCUApp implements SettingsListener {
 		{
 			JScrollPane modScroller = new JScrollPane(modPanel);
 			modScroller.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-			progressView = new ProgressView();
-			JScrollPane progressScroller = new JScrollPane(progressView);
+			progressScroller = new JScrollPane(progressView);
 			progressScroller.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
-			JTabbedPane instanceTabs = new JTabbedPane();
+			instanceTabs = new JTabbedPane();
 			{
 				instanceTabs.addTab("News", newsBrowser.getBaseComponent());
 				instanceTabs.addTab("Mods", modScroller);
 				instanceTabs.addTab("Progress", progressScroller);
+				/*
+				TODO: Implement new features
 				instanceTabs.addTab("Changes", new JPanel());
 				instanceTabs.addTab("Maintenance", new JPanel());
+				*/
 			}
 			contentPanel.add(instanceTabs, BorderLayout.CENTER);
 
@@ -270,13 +334,86 @@ public class MainForm extends MCUApp implements SettingsListener {
 		btnUpdate.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				//TODO
+				btnUpdate.setEnabled(false);
+				try {
+					Path instPath = Files.createDirectories(MCUpdater.getInstance().getInstanceRoot().resolve(selected.getServerId()));
+					Instance instData;
+					final Path instanceFile = instPath.resolve("instance.json");
+					try {
+						BufferedReader reader = Files.newBufferedReader(instanceFile, StandardCharsets.UTF_8);
+						instData = gson.fromJson(reader, Instance.class);
+						reader.close();
+					} catch (IOException ioe) {
+						instData = new Instance();
+					}
+					Set<String> digests = new HashSet<>();
+					List<Module> fullModList = ServerPackParser.loadFromURL(selected.getPackUrl(), selected.getServerId());
+					for (Module mod : fullModList) {
+						if (!mod.getMD5().isEmpty()) {
+							digests.add(mod.getMD5());
+						}
+						for (ConfigFile cf : mod.getConfigs()) {
+							if (!cf.getMD5().isEmpty()) {
+								digests.add(cf.getMD5());
+							}
+						}
+						for (GenericModule sm : mod.getSubmodules()) {
+							if (!sm.getMD5().isEmpty()) {
+								digests.add(sm.getMD5());
+							}
+						}
+					}
+					instData.setHash(MCUpdater.calculateGroupHash(digests));
+
+					final List<GenericModule> selectedMods = new ArrayList<>();
+					final List<ConfigFile> selectedConfigs = new ArrayList<>();
+					for (ModuleWidget entry : modPanel.getModules()) {
+						System.out.println(entry.getModule().getName() + " - " + entry.getModule().getModType().toString());
+						if (entry.isSelected()) {
+							selectedMods.add(entry.getModule());
+							if (entry.getModule().hasConfigs()) {
+								selectedConfigs.addAll(entry.getModule().getConfigs());
+							}
+							if (entry.getModule().hasSubmodules()) {
+								selectedMods.addAll(entry.getModule().getSubmodules());
+							}
+						}
+						if (!entry.getModule().getRequired()) {
+							instData.setModStatus(entry.getModule().getId(), entry.isSelected());
+						}
+					}
+					//TODO: Add hard update option
+					MCUpdater.getInstance().installMods(selected, selectedMods, selectedConfigs, instPath, false, instData, ModSide.CLIENT);
+				} catch (IOException e1) {
+					baseLogger.log(Level.SEVERE, "Unable to create directory for instance!", e1);
+				}
 			}
 		});
 		btnLaunch.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				//TODO
+				if (Version.requestedFeatureLevel(selected.getVersion(), "1.6")) {
+					//Do new launching
+					btnLaunch.setEnabled(false);
+					btnUpdate.setEnabled(false);
+					setPlaying(true);
+					Profile launchProfile = (Profile) profileModel.getSelectedItem();
+					if (!(launchProfile == null)) {
+						SettingsManager.getInstance().getSettings().setLastProfile(launchProfile.getName());
+						SettingsManager.getInstance().getSettings().findProfile(launchProfile.getName()).setLastInstance(selected.getServerId());
+						if (!SettingsManager.getInstance().isDirty()) {
+							SettingsManager.getInstance().saveSettings();
+						}
+						try {
+							tryNewLaunch(selected, modPanel.getModules(), launchProfile);
+						} catch (Exception ex) {
+							baseLogger.severe(ex.getMessage());
+							JOptionPane.showMessageDialog(frameMain, ex.getMessage() + "\n\nNote: An authentication error can occur if your profile is out of sync with Mojang's servers.\nTry re-adding your profile in the Settings window to resync with Mojang.", "MCUpdater", JOptionPane.ERROR_MESSAGE);
+						}
+					}
+				} else {
+					//Do old launching
+				}
 			}
 		});
 		cboProfiles.addItemListener(new ItemListener() {
@@ -287,6 +424,172 @@ public class MainForm extends MCUApp implements SettingsListener {
 				}
 			}
 		});
+	}
+
+	private void tryNewLaunch(final ServerList selected, Collection<ModuleWidget> modules, Profile user) throws Exception {
+		String playerName = user.getName();
+		String sessionKey = user.getSessionKey(this);
+		MinecraftVersion mcVersion = MinecraftVersion.loadVersion(selected.getVersion());
+		String indexName = mcVersion.getAssets();
+		if (indexName == null) {
+			indexName = "legacy";
+		}
+		String mainClass;
+		List<String> args = new ArrayList<>();
+		StringBuilder clArgs = new StringBuilder(mcVersion.getMinecraftArguments());
+		List<String> libs = new ArrayList<>();
+		MCUpdater mcu = MCUpdater.getInstance();
+		File indexesPath = mcu.getArchiveFolder().resolve("assets").resolve("indexes").toFile();
+		File indexFile = new File(indexesPath, indexName + ".json");
+		String json;
+		json = FileUtils.readFileToString(indexFile);
+		AssetIndex index = gson.fromJson(json, AssetIndex.class);
+		final Settings settings = SettingsManager.getInstance().getSettings();
+		if (settings.isFullScreen()) {
+			clArgs.append(" --fullscreen");
+		} else {
+			clArgs.append(" --width ").append(settings.getResWidth()).append(" --height ").append(settings.getResHeight());
+		}
+		if (settings.isAutoConnect() && selected.isAutoConnect()) {
+			URI address;
+			try {
+				address = new URI("my://" + selected.getAddress());
+				clArgs.append(" --server ").append(address.getHost());
+				if (address.getPort() != -1) {
+					clArgs.append(" --port ").append(address.getPort());
+				}
+			} catch (URISyntaxException e) {
+				e.printStackTrace();
+			}
+		}
+		clArgs.append(" --resourcePackDir ${resource_packs}");
+		if (!settings.getProgramWrapper().isEmpty()) {
+			args.add(settings.getProgramWrapper());
+		}
+		if (System.getProperty("os.name").startsWith("Win")) {
+			args.add((new File(settings.getJrePath()).toPath().resolve("bin").resolve("javaw.exe").toString()));
+		} else {
+			args.add((new File(settings.getJrePath()).toPath().resolve("bin").resolve("java").toString()));
+		}
+		args.add("-Xms" + settings.getMinMemory());
+		args.add("-Xmx" + settings.getMaxMemory());
+		args.add("-XX:PermSize=" + settings.getPermGen());
+		args.addAll(Arrays.asList(settings.getJvmOpts().split(" ")));
+		if (System.getProperty("os.name").startsWith("Mac")) {
+			args.add("-Xdock:icon=" + mcu.getArchiveFolder().resolve("assets").resolve("icons").resolve("minecraft.icns").toString());
+			args.add("-Xdock:name=Minecraft(MCUpdater)");
+		}
+		args.add("-Djava.library.path=" + mcu.getInstanceRoot().resolve(selected.getServerId()).resolve("lib").resolve("natives").toString());
+		if (!Version.requestedFeatureLevel(selected.getVersion(), "1.6")){
+			args.add("-Dminecraft.applet.TargetDirectory=" + mcu.getInstanceRoot().resolve(selected.getServerId()).toString());
+		}
+		if (!selected.getMainClass().isEmpty()) {
+			mainClass = selected.getMainClass();
+		} else {
+			mainClass = mcVersion.getMainClass();
+		}
+		for (ModuleWidget entry : modules) {
+			if (entry.isSelected()) {
+				if (entry.getModule().getModType().equals(ModType.Library)) {
+					libs.add(entry.getModule().getId() + ".jar");
+				}
+				if (!entry.getModule().getLaunchArgs().isEmpty()) {
+					clArgs.append(" ").append(entry.getModule().getLaunchArgs());
+				}
+				if (!entry.getModule().getJreArgs().isEmpty()) {
+					args.addAll(Arrays.asList(entry.getModule().getJreArgs().split(" ")));
+				}
+				if (entry.getModule().hasSubmodules()) {
+					for (GenericModule sm : entry.getModule().getSubmodules()) {
+						if (sm.getModType().equals(ModType.Library)) {
+							libs.add(sm.getId() + ".jar");
+						}
+						if (!sm.getLaunchArgs().isEmpty()) {
+							clArgs.append(" ").append(sm.getLaunchArgs());
+						}
+						if (!sm.getJreArgs().isEmpty()) {
+							args.addAll(Arrays.asList(sm.getJreArgs().split(" ")));
+						}
+					}
+				}
+			}
+		}
+		for (Library lib : mcVersion.getLibraries()) {
+			if (lib.validForOS() && !lib.hasNatives()) {
+				libs.add(lib.getFilename());
+			}
+		}
+		args.add("-cp");
+		StringBuilder classpath = new StringBuilder();
+		for (String entry : libs) {
+			classpath.append(mcu.getInstanceRoot().resolve(selected.getServerId()).resolve("lib").resolve(entry).toString()).append(MCUpdater.cpDelimiter());
+		}
+		classpath.append(mcu.getInstanceRoot().resolve(selected.getServerId()).resolve("bin").resolve("minecraft.jar").toString());
+		args.add(classpath.toString());
+		args.add(mainClass);
+		String tmpclArgs = clArgs.toString();
+		Map<String,String> fields = new HashMap<>();
+		StrSubstitutor fieldReplacer = new StrSubstitutor(fields);
+		fields.put("auth_player_name", playerName);
+		fields.put("auth_uuid", user.getUUID());
+		fields.put("auth_access_token", user.getAccessToken());
+		fields.put("auth_session", sessionKey);
+		fields.put("version_name", selected.getVersion());
+		fields.put("game_directory", mcu.getInstanceRoot().resolve(selected.getServerId()).toString());
+		if (index.isVirtual()) {
+			fields.put("game_assets", mcu.getArchiveFolder().resolve("assets").resolve("virtual").toString());
+		} else {
+			fields.put("game_assets", mcu.getArchiveFolder().resolve("assets").toString());
+		}
+		fields.put("resource_packs", mcu.getInstanceRoot().resolve(selected.getServerId()).resolve("resourcepacks").toString());
+		String[] fieldArr = tmpclArgs.split(" ");
+		for (int i = 0; i < fieldArr.length; i++) {
+			fieldArr[i] = fieldReplacer.replace(fieldArr[i]);
+		}
+		args.addAll(Arrays.asList(fieldArr));
+		args.addAll(Main.passthroughArgs);
+
+		log("Launch args:");
+		log("=======================");
+		for (String entry : args) {
+			log(entry);
+		}
+		log("=======================");
+		final ProcessBuilder pb = new ProcessBuilder(args);
+		pb.directory(mcu.getInstanceRoot().resolve(selected.getServerId()).toFile());
+		pb.redirectErrorStream(true);
+		final Thread gameThread = new Thread(new Runnable(){
+			@Override
+			public void run() {
+				ConsoleForm mcOutput = null;
+				try{
+					if (settings.isMinecraftToConsole()) {
+						mcOutput = new ConsoleForm("Minecraft instance: " + selected.getName());
+					}
+					Process task = pb.start();
+					BufferedReader buffRead = new BufferedReader(new InputStreamReader(task.getInputStream()));
+					String line;
+					while ((line = buffRead.readLine()) != null) {
+						if (line.length() > 0) {
+							if (settings.isMinecraftToConsole()) {
+								if (mcOutput != null) {
+									mcOutput.getConsole().log(line + "\n");
+								}
+							}
+						}
+					}
+				} catch (Exception e) {
+					baseLogger.log(Level.SEVERE, e.getMessage(), e);
+				} finally {
+					if (mcOutput != null) {
+						mcOutput.allowClose();
+					}
+					baseLogger.info("Minecraft process terminated");
+					setPlaying(false);
+				}
+			}
+		});
+		gameThread.start();
 	}
 
 	// Section - Logic elements
@@ -413,18 +716,19 @@ public class MainForm extends MCUApp implements SettingsListener {
 	}
 
 	@Override
-	public void addServer(ServerList entry) {
-
-	}
-
-	@Override
 	public DownloadQueue submitNewQueue(String queueName, String parent, Collection<Downloadable> files, File basePath, File cachePath) {
-		return null;
+		progressView.addProgressBar(queueName, parent);
+		if (profileModel.getSelectedItem() != null) {
+			return new DownloadQueue(queueName, parent, this, files, basePath, cachePath, ((Profile)profileModel.getSelectedItem()).getName());
+		} else {
+			return new DownloadQueue(queueName, parent, this, files, basePath, cachePath);
+		}
 	}
 
 	@Override
 	public DownloadQueue submitAssetsQueue(String queueName, String parent, MinecraftVersion version) {
-		return null;
+		progressView.addProgressBar(queueName, parent);
+		return AssetManager.downloadAssets(queueName, parent, MCUpdater.getInstance().getArchiveFolder().resolve("assets").toFile(), this, version);
 	}
 
 	@Override
@@ -440,6 +744,41 @@ public class MainForm extends MCUApp implements SettingsListener {
 		String lastProfile = newSettings.getLastProfile();
 		cboProfiles.setSelectedIndex(-1);
 		cboProfiles.setSelectedItem(newSettings.findProfile(lastProfile));
+	}
+
+	@Override
+	public void onQueueFinished(DownloadQueue queue) {
+		synchronized (progressView) {
+			log(queue.getParent() + " - " + queue.getName() + ": Finished!");
+			progressView.updateProgress(queue.getName(), queue.getParent(), 1f, queue.getTotalFileCount(), queue.getSuccessFileCount());
+			for (Downloadable entry : queue.getFailures()) {
+				baseLogger.severe("Failed: " + entry.getFilename());
+			}
+		}
+	}
+
+	@Override
+	public void onQueueProgress(DownloadQueue queue) {
+		updateCounter++;
+		if (updateCounter == 10) {
+			synchronized (progressView) {
+				progressView.updateProgress(queue.getName(), queue.getParent(), queue.getProgress(), queue.getTotalFileCount(), queue.getSuccessFileCount());
+			}
+			updateCounter = 0;
+		}
+	}
+
+	@Override
+	public void printMessage(String msg) {
+		log(msg);
+	}
+
+	public void setPlaying(boolean playing) {
+		this.playing = playing;
+	}
+
+	public boolean isPlaying() {
+		return playing;
 	}
 
 	private final class InstanceListener implements ListSelectionListener {
@@ -460,7 +799,7 @@ public class MainForm extends MCUApp implements SettingsListener {
 						setStatus("Server info not available");
 					}
 				}
-			}                                          }
+			}
+		}
 	}
-
 }

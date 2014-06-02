@@ -16,6 +16,7 @@ import java.util.List;
 public class Main {
 	public static List<String> passthroughArgs;
 	private static String defaultPackURL;
+	public static ConsoleForm mcuConsole;
 
 	public static void main(String[] args) {
 		OptionParser optParser = new OptionParser();
@@ -29,7 +30,6 @@ public class Main {
 		setDefaultPackURL(options.valueOf(packSpec));
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
-				//System.setProperty("java.util.Arrays.useLegacyMergeSort", "true");
 				SettingsManager.getInstance().loadSettings();
 				MCUpdater.getInstance().setInstanceRoot(new File(SettingsManager.getInstance().getSettings().getInstanceRoot()).toPath());
 				try {
@@ -42,7 +42,7 @@ public class Main {
 					if (UIManager.getLookAndFeel().getName().equals("Metal")) {
 						UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 					}
-					new ConsoleForm();
+					mcuConsole = new ConsoleForm("MCU Console");
 					new MainForm();
 				} catch (IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException | ClassNotFoundException e) {
 					e.printStackTrace();
