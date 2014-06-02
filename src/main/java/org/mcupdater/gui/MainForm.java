@@ -282,9 +282,8 @@ public class MainForm extends MCUApp implements SettingsListener {
 		cboProfiles.addItemListener(new ItemListener() {
 			@Override
 			public void itemStateChanged(ItemEvent e) {
-				try {
-					setSelectedInstance(((Profile)cboProfiles.getSelectedItem()).getLastInstance());
-				} finally {
+				if (cboProfiles.getSelectedIndex() > -1) {
+					setSelectedInstance(((Profile) cboProfiles.getSelectedItem()).getLastInstance());
 				}
 			}
 		});
@@ -437,29 +436,31 @@ public class MainForm extends MCUApp implements SettingsListener {
 	public void settingsChanged(Settings newSettings) {
 		refreshInstanceList();
 		refreshProfileList();
+		MCUpdater.getInstance().setInstanceRoot(new File(newSettings.getInstanceRoot()).toPath());
 		String lastProfile = newSettings.getLastProfile();
-		cboProfiles.setSelectedItem(null);
+		cboProfiles.setSelectedIndex(-1);
 		cboProfiles.setSelectedItem(newSettings.findProfile(lastProfile));
 	}
 
 	private final class InstanceListener implements ListSelectionListener {
 		@Override
 		public void valueChanged(ListSelectionEvent e) {
-			if (!e.getValueIsAdjusting()) {
-				changeSelectedServer(serverList.getSelectedValue());
-				try {
-					if (!serverList.getSelectedValue().getAddress().isEmpty()) {
-						ServerStatus serverStatus = ServerStatus.getStatus(serverList.getSelectedValue().getAddress());
-						setStatus(serverStatus.getMOTD() + " - " + serverStatus.getPlayers() + "/" + serverStatus.getMaxPlayers());
-					} else {
-						setStatus("Server status N/A");
+			if (serverList.getSelectedIndex() > -1) {
+				if (!e.getValueIsAdjusting()) {
+					changeSelectedServer(serverList.getSelectedValue());
+					try {
+						if (!serverList.getSelectedValue().getAddress().isEmpty()) {
+							ServerStatus serverStatus = ServerStatus.getStatus(serverList.getSelectedValue().getAddress());
+							setStatus(serverStatus.getMOTD() + " - " + serverStatus.getPlayers() + "/" + serverStatus.getMaxPlayers());
+						} else {
+							setStatus("Server status N/A");
+						}
+					} catch (Exception e1) {
+						baseLogger.log(Level.SEVERE, "Error getting server status", e1);
+						setStatus("Server info not available");
 					}
-				} catch (Exception e1) {
-					baseLogger.log(Level.SEVERE, "Error getting server status", e1);
-					setStatus("Server info not available");
 				}
-			}
-		}
+			}                                          }
 	}
 
 }

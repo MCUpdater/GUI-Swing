@@ -1,5 +1,9 @@
 package org.mcupdater.gui;
 
+import auth.MinecraftLoginService;
+import org.jdesktop.swingx.JXLoginPane;
+import org.jdesktop.swingx.JXLoginPane.*;
+import org.mcupdater.Yggdrasil.SessionResponse;
 import org.mcupdater.settings.Profile;
 import org.mcupdater.settings.Settings;
 import org.mcupdater.settings.SettingsListener;
@@ -9,7 +13,11 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
+import java.util.logging.Level;
 
 public class SettingsDialog extends JDialog implements SettingsListener {
 
@@ -41,9 +49,13 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 	private final JButton btnClearCache;
 	private final JButton btnResetSettings;
 	private final JButton btnClearStale;
+	private final JTextField txtInstanceRoot;
+	private final JButton btnInstanceRootBrowse;
 	private ProfileModel profileModel;
+	private SettingsDialog self;
 
 	public SettingsDialog() {
+		self = this;
 		setModalityType(ModalityType.APPLICATION_MODAL);
 		setModal(true);
 		setTitle("Settings");
@@ -51,6 +63,7 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		getContentPane().setLayout(new BorderLayout());
 		setIconImage(new ImageIcon(this.getClass().getResource("mcu-icon.png")).getImage());
 		setSize(700, 500);
+		SettingsManager.getInstance().addListener(this);
 
 		//Init GUI
 		JPanel pnlActions = new JPanel(new GridBagLayout());
@@ -264,6 +277,19 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 					GroupLayout.Group colLabel = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
 					GroupLayout.Group colContent = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
 
+					GroupLayout.Group rowInstanceRoot = layout.createParallelGroup(GroupLayout.Alignment.CENTER);
+					JLabel lblInstanceRoot = new JLabel("Instance Root: ");
+					JPanel pnlInstanceRoot = new JPanel(new BorderLayout());
+					txtInstanceRoot = new JTextField();
+					pnlInstanceRoot.setMaximumSize(sizeGuide);
+					lblInstanceRoot.setLabelFor(txtInstanceRoot);
+					btnInstanceRootBrowse = new JButton(new ImageIcon(this.getClass().getResource("folder_explore.png")));
+					pnlInstanceRoot.add(txtInstanceRoot, BorderLayout.CENTER);
+					pnlInstanceRoot.add(btnInstanceRootBrowse, BorderLayout.EAST);
+					colLabel.addComponent(lblInstanceRoot);
+					colContent.addComponent(pnlInstanceRoot);
+					rowInstanceRoot.addComponent(lblInstanceRoot).addComponent(pnlInstanceRoot);
+
 					GroupLayout.Group rowProfiles = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
 					JLabel lblProfiles = new JLabel("Profiles: ");
 					JPanel pnlProfiles = new JPanel(new BorderLayout());
@@ -315,6 +341,7 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 					);
 					layout.setVerticalGroup(
 							layout.createSequentialGroup()
+									.addGroup(rowInstanceRoot)
 									.addGroup(rowProfiles)
 									.addGroup(rowPacks)
 									.addComponent(btnClearCache)
@@ -336,49 +363,108 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		btnSave.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-
+				btnApply.doClick();
+				SettingsManager.getInstance().saveSettings();
 			}
 		});
 		btnReload.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-
+				SettingsManager.getInstance().reload();
 			}
 		});
 		btnApply.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				SettingsManager manager = SettingsManager.getInstance();
+				//Java tab
+				manager.getSettings().setMinMemory(txtMinMemory.getText());
+				manager.getSettings().setMaxMemory(txtMaxMemory.getText());
+				manager.getSettings().setPermGen(txtPermGen.getText());
+				manager.getSettings().setJrePath(txtJavaHome.getText());
+				manager.getSettings().setJvmOpts(txtJVMOpts.getText());
+				manager.getSettings().setProgramWrapper(txtWrapper.getText());
 
+				//Minecraft tab
+				manager.getSettings().setFullScreen(chkFullscreen.isSelected());
+				manager.getSettings().setResWidth(Integer.parseInt(txtWindowWidth.getText()));
+				manager.getSettings().setResHeight(Integer.parseInt(txtWindowHeight.getText()));
+				manager.getSettings().setAutoConnect(chkAutoconnect.isSelected());
+				manager.getSettings().setMinimizeOnLaunch(chkMinimize.isSelected());
+				manager.getSettings().setMinecraftToConsole(chkConsoleOutput.isSelected());
+
+				//MCUpdater tab
+				manager.getSettings().setInstanceRoot(txtInstanceRoot.getText());
+
+				manager.setDirty();
+				manager.fireSettingsUpdate();
 			}
 		});
 		btnCancel.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-
+				self.dispose();
 			}
 		});
 		btnJavaHomeBrowse.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-
+				JFileChooser jfcJRE = new JFileChooser(txtJavaHome.getText());
+				jfcJRE.setDialogType(JFileChooser.DIRECTORIES_ONLY);
+				jfcJRE.setDialogTitle("Path to Java");
+				int choice = jfcJRE.showDialog(self, "Select");
+				if (choice == JFileChooser.APPROVE_OPTION) {
+					try {
+						txtJavaHome.setText(jfcJRE.getSelectedFile().getCanonicalPath());
+					} catch (IOException e1) {
+						MainForm.getInstance().baseLogger.log(Level.SEVERE, "Error occurred while getting JRE path!", e1);
+					}
+				}
 			}
 		});
 		btnWrapperBrowse.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-
+				JFileChooser jfcWrapper = new JFileChooser(txtWrapper.getText());
+				jfcWrapper.setDialogType(JFileChooser.FILES_ONLY);
+				int choice = jfcWrapper.showOpenDialog(self);
+				if (choice == JFileChooser.APPROVE_OPTION) {
+					try {
+						txtWrapper.setText(jfcWrapper.getSelectedFile().getCanonicalPath());
+					} catch (IOException e1) {
+						MainForm.getInstance().baseLogger.log(Level.SEVERE, "Error occurred while getting JRE path!", e1);
+					}
+				}
 			}
 		});
 		btnProfileAdd.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-
+				JXLoginPane login = new JXLoginPane();
+				MinecraftLoginService loginService = new MinecraftLoginService(login, UUID.randomUUID().toString());
+				login.setLoginService(loginService);
+				JXLoginPane.showLoginDialog(self, login);
+				SessionResponse response = loginService.getResponse();
+				if (response.getError().isEmpty()) {
+					Profile newProfile = new Profile();
+					newProfile.setStyle("Yggdrasil");
+					newProfile.setUsername(login.getUserName());
+					newProfile.setAccessToken(response.getAccessToken());
+					newProfile.setClientToken(response.getClientToken());
+					newProfile.setName(response.getSelectedProfile().getName());
+					newProfile.setUUID(response.getSelectedProfile().getId());
+					SettingsManager.getInstance().getSettings().addOrReplaceProfile(newProfile);
+					SettingsManager.getInstance().setDirty();
+					SettingsManager.getInstance().fireSettingsUpdate();
+				}
 			}
 		});
 		btnProfileRemove.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-
+				SettingsManager.getInstance().getSettings().removeProfile(((Profile) profileModel.getSelectedItem()).getName());
+				SettingsManager.getInstance().setDirty();
+				SettingsManager.getInstance().fireSettingsUpdate();
 			}
 		});
 		btnPackAdd.addActionListener(new ActionListener() {
@@ -408,7 +494,12 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		btnResetSettings.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-
+				Settings newSettings = SettingsManager.getInstance().getDefaultSettings();
+				Settings oldSettings = SettingsManager.getInstance().getSettings();
+				newSettings.setProfiles(oldSettings.getProfiles());
+				newSettings.setPackURLs(oldSettings.getPackURLs());
+				newSettings.setLastProfile(oldSettings.getLastProfile());
+				SettingsManager.getInstance().setSettings(newSettings);
 			}
 		});
 	}
@@ -427,6 +518,7 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		chkAutoconnect.setSelected(current.isAutoConnect());
 		chkMinimize.setSelected(current.isMinimizeOnLaunch());
 		chkConsoleOutput.setSelected(current.isMinecraftToConsole());
+		txtInstanceRoot.setText(current.getInstanceRoot());
 		profileModel.clearAndSet(current.getProfiles());
 		List<String> packURLs = current.getPackURLs();
 		lstPacks.setListData(packURLs.toArray(new String[packURLs.size()]));
