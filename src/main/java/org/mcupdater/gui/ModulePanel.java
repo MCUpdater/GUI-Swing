@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 
 public class ModulePanel extends JPanel {
 	private Map<String,ModuleWidget> modules = new HashMap<>();
@@ -30,7 +31,11 @@ public class ModulePanel extends JPanel {
 		for (Entry<String,ModuleWidget> entry : modules.entrySet()) {
 			if (!entry.getValue().getModule().getDepends().isEmpty()){
 				for (String modid : entry.getValue().getModule().getDepends().split(" ")) {
-					modules.get(modid).addDependent(entry.getValue());
+					if (modules.get(modid) == null) {
+						MainForm.getInstance().baseLogger.log(Level.WARNING, entry.getValue().getModule().getName() + ": " + modid + " does not exist in the mod list for dependency.");
+					} else {
+						modules.get(modid).addDependent(entry.getValue());
+					}
 				}
 			}
 		}
