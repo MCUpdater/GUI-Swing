@@ -512,7 +512,7 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		btnClearCache.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				DownloadCache.purge();
+				DownloadCache.cull(new HashSet<String>());
 			}
 		});
 		btnClearStale.addActionListener(new ActionListener() {
