@@ -1,19 +1,28 @@
 package org.mcupdater.gui;
 
-import org.mcupdater.auth.MinecraftLoginService;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jdesktop.swingx.JXLoginPane;
 import org.mcupdater.Yggdrasil.SessionResponse;
+import org.mcupdater.auth.MinecraftLoginService;
+import org.mcupdater.model.ServerList;
 import org.mcupdater.settings.Profile;
 import org.mcupdater.settings.Settings;
 import org.mcupdater.settings.SettingsListener;
 import org.mcupdater.settings.SettingsManager;
+import org.mcupdater.util.DownloadCache;
+import org.mcupdater.util.ServerPackParser;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 
@@ -503,14 +512,46 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		btnClearCache.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-
+				DownloadCache.purge();
 			}
 		});
 		btnClearStale.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				Set<String> digests = new HashSet<>();
+				Settings current = SettingsManager.getInstance().getSettings();
 
+				Set<String> urls = new HashSet<>();
+				urls.addAll(current.getPackURLs());
+
+				for (String serverUrl : urls) {
+					try {
+						Element docEle;
+						Document serverHeader = ServerPackParser.readXmlFromUrl(serverUrl);
+						if (!(serverHeader == null)) {
+							Element parent = serverHeader.getDocumentElement();
+							if (parent.getNodeName().equals("ServerPack")) {
+								String mcuVersion = parent.getAttribute("version");
+								NodeList servers = parent.getElementsByTagName("Server");
+								for (int i = 0; i < servers.getLength(); i++) {
+									docEle = (Element) servers.item(i);
+									ServerList sl = ServerList.fromElement(mcuVersion, serverUrl, docEle);
+									if (!sl.isFakeServer()) {
+										digests.addAll(sl.getDigests());
+									}
+								}
+							} else {
+								ServerList sl = ServerList.fromElement("1.0", serverUrl, parent);
+								digests.addAll(sl.getDigests());
+							}
+						}
+					} catch (Exception ex) {
+						MainForm.getInstance().log(ExceptionUtils.getStackTrace(ex));
+					}
+				}
+				DownloadCache.cull(digests);
 			}
+
 		});
 		btnResetSettings.addActionListener(new ActionListener() {
 			@Override

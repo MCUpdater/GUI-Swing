@@ -31,6 +31,7 @@ import org.w3c.dom.NodeList;
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
+import javax.swing.text.Style;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -43,6 +44,7 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -97,9 +99,12 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		baseLogger.info("Dynatherms connected!");
 		bindLogic();
 		baseLogger.info("Infracells up!");
+		if (!SettingsManager.getInstance().getSettings().getPackURLs().contains(Main.getDefaultPackURL())) {
+			SettingsManager.getInstance().getSettings().addPackURL(Main.getDefaultPackURL());
+			SettingsManager.getInstance().saveSettings();
+		}
 		settingsChanged(SettingsManager.getInstance().getSettings());
 		frameMain.setVisible(true);
-		//doTesting();
 		baseLogger.info("Megathrusters are go!");
 		Thread daemonMonitor = new Thread() {
 			private ServerList currentSelection;
@@ -150,21 +155,6 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		};
 		daemonMonitor.setDaemon(true);
 		daemonMonitor.start();
-	}
-
-	private void doTesting() {
-		progressView.addProgressBar("Test","Layout test 1");
-		progressView.addProgressBar("Test","Layout test 2");
-		progressView.addProgressBar("Test","Layout test 3");
-		progressView.addProgressBar("Test","Layout test 4");
-		progressView.addProgressBar("Test","Layout test 5");
-		progressView.addProgressBar("Test","Layout test 6");
-		progressView.addProgressBar("Test","Layout test 7");
-		progressView.addProgressBar("Test","Layout test 8");
-		progressView.addProgressBar("Test","Layout test 9");
-		progressView.addProgressBar("Test","Layout test 10");
-		progressView.updateProgress("Test","Layout test 3", 0.6666F, 2, 1);
-        progressView.updateProgress("Test","Layout test 7", 1F, 10, 10);
 	}
 
 	// Section - GUI elements
@@ -307,6 +297,9 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 							if (response == JOptionPane.YES_OPTION) {
 								SettingsManager.getInstance().getSettings().addPackURL(newUrl);
 								SettingsManager.getInstance().fireSettingsUpdate();
+								if (!SettingsManager.getInstance().isDirty()) {
+									SettingsManager.getInstance().saveSettings();
+								}
 							}
 						}
 					} else {
@@ -392,27 +385,32 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		btnLaunch.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				if (Version.requestedFeatureLevel(selected.getVersion(), "1.6")) {
-					//Do new launching
-					btnLaunch.setEnabled(false);
-					btnUpdate.setEnabled(false);
-					setPlaying(true);
-					Profile launchProfile = (Profile) profileModel.getSelectedItem();
-					if (!(launchProfile == null)) {
-						SettingsManager.getInstance().getSettings().setLastProfile(launchProfile.getName());
-						SettingsManager.getInstance().getSettings().findProfile(launchProfile.getName()).setLastInstance(selected.getServerId());
-						if (!SettingsManager.getInstance().isDirty()) {
-							SettingsManager.getInstance().saveSettings();
+				//Do new launching
+				btnLaunch.setEnabled(false);
+				btnUpdate.setEnabled(false);
+				setPlaying(true);
+				Profile launchProfile = (Profile) profileModel.getSelectedItem();
+				if (!(launchProfile == null)) {
+					SettingsManager.getInstance().getSettings().setLastProfile(launchProfile.getName());
+					SettingsManager.getInstance().getSettings().findProfile(launchProfile.getName()).setLastInstance(selected.getServerId());
+					if (!SettingsManager.getInstance().isDirty()) {
+						SettingsManager.getInstance().saveSettings();
+					}
+					if (selected.getLauncherType().equals("Legacy")) {
+						try {
+							tryOldLaunch(selected, modPanel.getModules(), launchProfile);
+						} catch (Exception ex) {
+							baseLogger.log(Level.SEVERE, ex.getMessage(), ex);
+							JOptionPane.showMessageDialog(frameMain, ex.getMessage() + "\n\nNote: An authentication error can occur if your profile is out of sync with Mojang's servers.\nTry re-adding your profile in the Settings window to resync with Mojang.", "MCUpdater", JOptionPane.ERROR_MESSAGE);
 						}
+					} else {
 						try {
 							tryNewLaunch(selected, modPanel.getModules(), launchProfile);
 						} catch (Exception ex) {
-							baseLogger.severe(ex.getMessage());
+							baseLogger.log(Level.SEVERE, ex.getMessage(), ex);
 							JOptionPane.showMessageDialog(frameMain, ex.getMessage() + "\n\nNote: An authentication error can occur if your profile is out of sync with Mojang's servers.\nTry re-adding your profile in the Settings window to resync with Mojang.", "MCUpdater", JOptionPane.ERROR_MESSAGE);
 						}
 					}
-				} else {
-					//Do old launching
 				}
 			}
 		});
@@ -480,9 +478,6 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 			args.add("-Xdock:name=Minecraft(MCUpdater)");
 		}
 		args.add("-Djava.library.path=" + mcu.getInstanceRoot().resolve(selected.getServerId()).resolve("lib").resolve("natives").toString());
-		if (!Version.requestedFeatureLevel(selected.getVersion(), "1.6")){
-			args.add("-Dminecraft.applet.TargetDirectory=" + mcu.getInstanceRoot().resolve(selected.getServerId()).toString());
-		}
 		if (!selected.getMainClass().isEmpty()) {
 			mainClass = selected.getMainClass();
 		} else {
@@ -573,7 +568,112 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 						if (line.length() > 0) {
 							if (settings.isMinecraftToConsole()) {
 								if (mcOutput != null) {
-									mcOutput.getConsole().log(line + "\n");
+									Style lineStyle = null;
+									if (line.contains("WARNING")) { lineStyle = mcOutput.getConsole().warnStyle; }
+									if (line.contains("SEVERE")) { lineStyle = mcOutput.getConsole().errorStyle; }
+									mcOutput.getConsole().log(line + "\n", lineStyle);
+								}
+							}
+						}
+					}
+				} catch (Exception e) {
+					baseLogger.log(Level.SEVERE, e.getMessage(), e);
+				} finally {
+					if (mcOutput != null) {
+						mcOutput.allowClose();
+					}
+					baseLogger.info("Minecraft process terminated");
+					setPlaying(false);
+				}
+			}
+		});
+		gameThread.start();
+	}
+
+	private void tryOldLaunch(final ServerList selected, Collection<ModuleWidget> modules, Profile user) throws Exception {
+		Path mcuPath = MCUpdater.getInstance().getArchiveFolder();
+		final Settings settings = SettingsManager.getInstance().getSettings();
+		Path instancePath = MCUpdater.getInstance().getInstanceRoot().resolve(selected.getServerId());
+		String playerName = user.getName();
+		String sessionKey = user.getSessionKey(this);
+		List<String> args = new ArrayList<>();
+		if (!settings.getProgramWrapper().isEmpty()) {
+			args.add(settings.getProgramWrapper());
+		}
+		Path jrePath = FileSystems.getDefault().getPath(settings.getJrePath());
+		if (System.getProperty("os.name").startsWith("Win")) {
+			if (Files.exists(jrePath.resolve("bin").resolve("javaw.exe"))) {
+				args.add(jrePath.resolve("bin").resolve("javaw.exe").toString());
+			} else {
+				throw new Exception("Java not found at: " + jrePath.toString());
+			}
+		} else {
+			String javaPath = "";
+			if (System.getProperty("os.name").startsWith("Mac")) {
+				if (Files.exists(jrePath.resolve("Commands").resolve("java"))) {
+					javaPath = jrePath.resolve("Commands").resolve("java").toString();
+				}
+			}
+			if (javaPath.isEmpty()) {
+				if (Files.exists(jrePath.resolve("bin").resolve("java"))) {
+					args.add(jrePath.resolve("bin").resolve("java").toString());
+				} else {
+					throw new Exception("Java not found at: " + jrePath.toString());
+				}
+			} else {
+				args.add(javaPath);
+			}
+		}
+		if (System.getProperty("os.name").startsWith("Mac")) {
+			args.add("-Xdock:icon=" + mcuPath.resolve("assets").resolve("icons").resolve("minecraft.icns").toString());
+			args.add("-Xdock:name=Minecraft(MCUpdater)");
+		}
+		args.addAll(Arrays.asList(settings.getJvmOpts().split(" ")));
+		args.add("-Xms" + settings.getMinMemory());
+		args.add("-Xmx" + settings.getMaxMemory());
+		args.add("-XX:PermSize=" + settings.getPermGen());
+		args.add("-classpath");
+		args.add(mcuPath.resolve("lib").resolve("MCU-Launcher.jar").toString() + System.getProperty("path.separator") + instancePath.resolve("lib").resolve("*"));
+		args.add("org.mcupdater.MinecraftFrame");
+		args.add(playerName);
+		args.add(sessionKey);
+		args.add(selected.getName());
+		args.add(instancePath.toString());
+		args.add(instancePath.resolve("lib").toString());
+		args.add(selected.getIconUrl().isEmpty() ? "https://minecraft.net/favicon.png" : selected.getIconUrl());
+		args.add(String.valueOf(settings.getResWidth()));
+		args.add(String.valueOf(settings.getResHeight()));
+		args.add(selected.getAddress().isEmpty() ? "localhost" : selected.getAddress());
+		args.add(Boolean.toString(selected.isAutoConnect() && settings.isAutoConnect()));
+
+		log("Launch args:");
+		log("=======================");
+		for (String entry : args) {
+			log(entry);
+		}
+		log("=======================");
+		final ProcessBuilder pb = new ProcessBuilder(args);
+		pb.directory(instancePath.toFile());
+		pb.redirectErrorStream(true);
+		final Thread gameThread = new Thread(new Runnable(){
+			@Override
+			public void run() {
+				ConsoleForm mcOutput = null;
+				try{
+					if (settings.isMinecraftToConsole()) {
+						mcOutput = new ConsoleForm("Minecraft instance: " + selected.getName());
+					}
+					Process task = pb.start();
+					BufferedReader buffRead = new BufferedReader(new InputStreamReader(task.getInputStream()));
+					String line;
+					while ((line = buffRead.readLine()) != null) {
+						if (line.length() > 0) {
+							if (settings.isMinecraftToConsole()) {
+								if (mcOutput != null) {
+									Style lineStyle = null;
+									if (line.contains("WARNING")) { lineStyle = mcOutput.getConsole().warnStyle; }
+									if (line.contains("SEVERE")) { lineStyle = mcOutput.getConsole().errorStyle; }
+									mcOutput.getConsole().log(line + "\n", lineStyle);
 								}
 							}
 						}
@@ -656,22 +756,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		} catch (Exception e) {
 			baseLogger.warning("Unable to sort mod list!");
 		}
-		Set<String> digests = new HashSet<>();
-		for (Module mod : modList) {
-			if (!mod.getMD5().isEmpty()) {
-				digests.add(mod.getMD5());
-			}
-			for (ConfigFile cf : mod.getConfigs()) {
-				if (!cf.getMD5().isEmpty()) {
-					digests.add(cf.getMD5());
-				}
-			}
-			for (GenericModule sm : mod.getSubmodules()) {
-				if (!sm.getMD5().isEmpty()) {
-					digests.add(sm.getMD5());
-				}
-			}
-		}
+		Set<String> digests = entry.getDigests();
 		String remoteHash = MCUpdater.calculateGroupHash(digests);
 		Instance instData = new Instance();
 		final Path instanceFile = MCUpdater.getInstance().getInstanceRoot().resolve(entry.getServerId()).resolve("instance.json");
