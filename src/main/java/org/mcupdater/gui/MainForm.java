@@ -751,6 +751,12 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		this.selected = entry;
 		newsBrowser.navigate(entry.getNewsUrl());
 		List<Module> modList = ServerPackParser.loadFromURL(entry.getPackUrl(), entry.getServerId());
+		if (modList == null) {
+			frameMain.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+			JOptionPane.showMessageDialog(null, "This server pack is invalid.  Please check the console window for errors.");
+			modPanel.reload(new ArrayList<Module>(), new HashMap<String,Boolean>() );
+			return;
+		}
 		try {
 			Collections.sort(modList, new ModuleComparator(ModuleComparator.Mode.OPTIONAL_FIRST));
 		} catch (Exception e) {

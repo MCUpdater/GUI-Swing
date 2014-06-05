@@ -8,7 +8,6 @@ import org.mcupdater.settings.SettingsManager;
 import org.mcupdater.util.MCUpdater;
 
 import javax.swing.*;
-import javax.swing.UIManager.LookAndFeelInfo;
 import java.awt.*;
 import java.io.File;
 import java.util.List;
@@ -23,8 +22,9 @@ public class Main {
 		optParser.allowsUnrecognizedOptions();
 		ArgumentAcceptingOptionSpec<String> packSpec = optParser.accepts("ServerPack").withRequiredArg().ofType(String.class);
 		ArgumentAcceptingOptionSpec<File> rootSpec = optParser.accepts("MCURoot").withRequiredArg().ofType(File.class);
+		optParser.accepts("syslf","Use OS-specific look and feel");
 		NonOptionArgumentSpec<String> nonOpts = optParser.nonOptions();
-		OptionSet options = optParser.parse(args);
+		final OptionSet options = optParser.parse(args);
 		passthroughArgs = options.valuesOf(nonOpts);
 		MCUpdater.getInstance(options.valueOf(rootSpec));
 		setDefaultPackURL(options.valueOf(packSpec));
@@ -33,14 +33,19 @@ public class Main {
 				SettingsManager.getInstance().loadSettings();
 				MCUpdater.getInstance().setInstanceRoot(new File(SettingsManager.getInstance().getSettings().getInstanceRoot()).toPath());
 				try {
-					for (LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
-						if ("Nimbus".equals(info.getName())) {
-							UIManager.setLookAndFeel(info.getClassName());
-							break;
-						}
-					}
-					if (UIManager.getLookAndFeel().getName().equals("Metal")) {
+					if (options.has("syslf")) {
 						UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+					}   else {
+						for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
+							System.out.println("Installed L&F: " + info.getName());
+							if ("Nimbus".equals(info.getName())) {
+								UIManager.setLookAndFeel(info.getClassName());
+								break;
+							}
+						}
+						if (UIManager.getLookAndFeel().getName().equals("Metal")) {
+							UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+						}
 					}
 					mcuConsole = new ConsoleForm("MCU Console");
 					new MainForm();
