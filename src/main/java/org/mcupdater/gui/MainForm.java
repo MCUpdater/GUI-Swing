@@ -4,9 +4,12 @@ import com.google.gson.Gson;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.text.StrSubstitutor;
+import org.jdesktop.swingx.JXLoginPane;
 import org.mcupdater.FMLStyleFormatter;
 import org.mcupdater.MCUApp;
+import org.mcupdater.Yggdrasil.SessionResponse;
 import org.mcupdater.api.Version;
+import org.mcupdater.auth.MinecraftLoginService;
 import org.mcupdater.downloadlib.DownloadQueue;
 import org.mcupdater.downloadlib.Downloadable;
 import org.mcupdater.downloadlib.TrackerListener;
@@ -55,6 +58,7 @@ import java.util.logging.Logger;
 
 public class MainForm extends MCUApp implements SettingsListener, TrackerListener {
 	private static MainForm instance;
+	private final MainForm self;
 	private JFrame frameMain;
 	private SLListModel slModel;
 	private ProfileModel profileModel;
@@ -79,6 +83,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 	private JScrollPane progressScroller;
 
 	public MainForm() {
+		self = this;
 		SettingsManager.getInstance().addListener(this);
 		this.baseLogger = Logger.getLogger("MCUpdater");
 		baseLogger.setLevel(Level.ALL);
@@ -102,6 +107,14 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		if (!SettingsManager.getInstance().getSettings().getPackURLs().contains(Main.getDefaultPackURL())) {
 			SettingsManager.getInstance().getSettings().addPackURL(Main.getDefaultPackURL());
 			SettingsManager.getInstance().saveSettings();
+		}
+		if (SettingsManager.getInstance().getSettings().getProfiles().size() == 0) {
+			Profile newProfile = requestLogin("");
+			if (newProfile != null) {
+				SettingsManager.getInstance().getSettings().addOrReplaceProfile(newProfile);
+				SettingsManager.getInstance().fireSettingsUpdate();
+				SettingsManager.getInstance().saveSettings();
+			}
 		}
 		settingsChanged(SettingsManager.getInstance().getSettings());
 		frameMain.setVisible(true);
@@ -319,7 +332,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		btnSettings.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				SettingsDialog settings = new SettingsDialog();
+				SettingsDialog settings = new SettingsDialog(self);
 				settings.setLocationRelativeTo(frameMain);
 				settings.setVisible(true);
 			}
@@ -402,6 +415,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 						} catch (Exception ex) {
 							baseLogger.log(Level.SEVERE, ex.getMessage(), ex);
 							JOptionPane.showMessageDialog(frameMain, ex.getMessage() + "\n\nNote: An authentication error can occur if your profile is out of sync with Mojang's servers.\nTry re-adding your profile in the Settings window to resync with Mojang.", "MCUpdater", JOptionPane.ERROR_MESSAGE);
+							setPlaying(false);
 						}
 					} else {
 						try {
@@ -409,6 +423,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 						} catch (Exception ex) {
 							baseLogger.log(Level.SEVERE, ex.getMessage(), ex);
 							JOptionPane.showMessageDialog(frameMain, ex.getMessage() + "\n\nNote: An authentication error can occur if your profile is out of sync with Mojang's servers.\nTry re-adding your profile in the Settings window to resync with Mojang.", "MCUpdater", JOptionPane.ERROR_MESSAGE);
+							setPlaying(false);
 						}
 					}
 				}
@@ -803,7 +818,22 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 
 	@Override
 	public Profile requestLogin(String username) {
-		return null;
+		JXLoginPane login = new JXLoginPane();
+		MinecraftLoginService loginService = new MinecraftLoginService(login, UUID.randomUUID().toString());
+		login.setLoginService(loginService);
+		JXLoginPane.showLoginDialog(frameMain, login);
+		SessionResponse response = loginService.getResponse();
+		Profile newProfile = null;
+		if (response.getError().isEmpty()) {
+			newProfile = new Profile();
+			newProfile.setStyle("Yggdrasil");
+			newProfile.setUsername(login.getUserName());
+			newProfile.setAccessToken(response.getAccessToken());
+			newProfile.setClientToken(response.getClientToken());
+			newProfile.setName(response.getSelectedProfile().getName());
+			newProfile.setUUID(response.getSelectedProfile().getId());
+		}
+		return newProfile;
 	}
 
 	@Override

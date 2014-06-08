@@ -2,6 +2,7 @@ package org.mcupdater.gui;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jdesktop.swingx.JXLoginPane;
+import org.mcupdater.MCUApp;
 import org.mcupdater.Yggdrasil.SessionResponse;
 import org.mcupdater.auth.MinecraftLoginService;
 import org.mcupdater.model.ServerList;
@@ -57,10 +58,13 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 	private final JButton btnClearStale;
 	private final JTextField txtInstanceRoot;
 	private final JButton btnInstanceRootBrowse;
+	private final JList<Profile> lstProfiles;
 	private ProfileModel profileModel;
 	private SettingsDialog self;
+	private final MCUApp parent;
 
-	public SettingsDialog() {
+	public SettingsDialog(MCUApp parent) {
+		this.parent = parent;
 		self = this;
 		setModalityType(ModalityType.APPLICATION_MODAL);
 		setModal(true);
@@ -299,7 +303,7 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 					GroupLayout.Group rowProfiles = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
 					JLabel lblProfiles = new JLabel("Profiles: ");
 					JPanel pnlProfiles = new JPanel(new BorderLayout());
-					JList<Profile> lstProfiles = new JList<>();
+					lstProfiles = new JList<>();
 					profileModel = new ProfileModel();
 					lstProfiles.setModel(profileModel);
 					pnlProfiles.add(lstProfiles, BorderLayout.CENTER);
@@ -465,19 +469,8 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		btnProfileAdd.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JXLoginPane login = new JXLoginPane();
-				MinecraftLoginService loginService = new MinecraftLoginService(login, UUID.randomUUID().toString());
-				login.setLoginService(loginService);
-				JXLoginPane.showLoginDialog(self, login);
-				SessionResponse response = loginService.getResponse();
-				if (response.getError().isEmpty()) {
-					Profile newProfile = new Profile();
-					newProfile.setStyle("Yggdrasil");
-					newProfile.setUsername(login.getUserName());
-					newProfile.setAccessToken(response.getAccessToken());
-					newProfile.setClientToken(response.getClientToken());
-					newProfile.setName(response.getSelectedProfile().getName());
-					newProfile.setUUID(response.getSelectedProfile().getId());
+				Profile newProfile = parent.requestLogin("");
+				if (newProfile != null) {
 					SettingsManager.getInstance().getSettings().addOrReplaceProfile(newProfile);
 					SettingsManager.getInstance().setDirty();
 					SettingsManager.getInstance().fireSettingsUpdate();
@@ -487,7 +480,7 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		btnProfileRemove.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				SettingsManager.getInstance().getSettings().removeProfile(((Profile) profileModel.getSelectedItem()).getName());
+				SettingsManager.getInstance().getSettings().removeProfile(lstProfiles.getSelectedValue().getName());
 				SettingsManager.getInstance().setDirty();
 				SettingsManager.getInstance().fireSettingsUpdate();
 			}
