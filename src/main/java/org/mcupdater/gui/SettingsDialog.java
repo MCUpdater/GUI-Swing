@@ -1,10 +1,7 @@
 package org.mcupdater.gui;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.jdesktop.swingx.JXLoginPane;
 import org.mcupdater.MCUApp;
-import org.mcupdater.Yggdrasil.SessionResponse;
-import org.mcupdater.auth.MinecraftLoginService;
 import org.mcupdater.model.ServerList;
 import org.mcupdater.settings.Profile;
 import org.mcupdater.settings.Settings;
@@ -24,7 +21,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 import java.util.logging.Level;
 
 public class SettingsDialog extends JDialog implements SettingsListener {

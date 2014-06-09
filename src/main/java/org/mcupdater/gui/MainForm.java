@@ -31,6 +31,7 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
@@ -64,13 +65,13 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 	private ProfileModel profileModel;
 	private JList<ServerList> serverList;
 	private JComboBox<Profile> cboProfiles;
-	private BrowserProxy newsBrowser = BrowserProxy.createProxy();
+	private final BrowserProxy newsBrowser = BrowserProxy.createProxy();
 	private JButton btnRefresh;
 	private ServerList selected;
-	private Gson gson = new Gson();
-	protected ModulePanel modPanel = new ModulePanel();
-	private ImageIcon GREEN_FLAG = new ImageIcon(this.getClass().getResource("flag_green.png"));
-	private ImageIcon RED_FLAG = new ImageIcon(this.getClass().getResource("flag_red.png"));
+	private final Gson gson = new Gson();
+	protected final ModulePanel modPanel = new ModulePanel();
+	private final ImageIcon GREEN_FLAG = new ImageIcon(this.getClass().getResource("flag_green.png"));
+	private final ImageIcon RED_FLAG = new ImageIcon(this.getClass().getResource("flag_red.png"));
 	private JLabel lblServerStatus;
 	private final ProgressView progressView = new ProgressView();
 	private JButton btnUpdate;
@@ -411,7 +412,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 					}
 					if (selected.getLauncherType().equals("Legacy")) {
 						try {
-							tryOldLaunch(selected, modPanel.getModules(), launchProfile);
+							tryOldLaunch(selected, launchProfile);
 						} catch (Exception ex) {
 							baseLogger.log(Level.SEVERE, ex.getMessage(), ex);
 							JOptionPane.showMessageDialog(frameMain, ex.getMessage() + "\n\nNote: An authentication error can occur if your profile is out of sync with Mojang's servers.\nTry re-adding your profile in the Settings window to resync with Mojang.", "MCUpdater", JOptionPane.ERROR_MESSAGE);
@@ -605,7 +606,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		gameThread.start();
 	}
 
-	private void tryOldLaunch(final ServerList selected, Collection<ModuleWidget> modules, Profile user) throws Exception {
+	private void tryOldLaunch(final ServerList selected, Profile user) throws Exception {
 		Path mcuPath = MCUpdater.getInstance().getArchiveFolder();
 		final Settings settings = SettingsManager.getInstance().getSettings();
 		Path instancePath = MCUpdater.getInstance().getInstanceRoot().resolve(selected.getServerId());
@@ -819,12 +820,19 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 	@Override
 	public Profile requestLogin(String username) {
 		JXLoginPane login = new JXLoginPane();
+		Image img = null;
+		try {
+			img = ImageIO.read(getClass().getResource("banner.png"));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		login.setBanner(img);
 		MinecraftLoginService loginService = new MinecraftLoginService(login, UUID.randomUUID().toString());
 		login.setLoginService(loginService);
 		JXLoginPane.showLoginDialog(frameMain, login);
 		SessionResponse response = loginService.getResponse();
 		Profile newProfile = null;
-		if (response.getError().isEmpty()) {
+		if (response != null && response.getError().isEmpty()) {
 			newProfile = new Profile();
 			newProfile.setStyle("Yggdrasil");
 			newProfile.setUsername(login.getUserName());
