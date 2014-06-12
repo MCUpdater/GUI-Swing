@@ -8,8 +8,8 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 
 public class CALogHandler extends Handler {
-	private ConsoleArea console;
-	private SimpleDateFormat sdFormat = new SimpleDateFormat("[HH:mm:ss.SSS] ");
+	private final ConsoleArea console;
+	private final SimpleDateFormat sdFormat = new SimpleDateFormat("[HH:mm:ss.SSS] ");
 
 	public CALogHandler(ConsoleArea console) {
 		this.console = console;
@@ -30,6 +30,7 @@ public class CALogHandler extends Handler {
 			if (record.getLevel() == Level.SEVERE) {
 				a = console.errorStyle;
 			}
+			//noinspection ThrowableResultOfMethodCallIgnored
 			Throwable thrown = record.getThrown();
 			try {
 				console.log(sdFormat.format(recordDate.getTime()) + record.getMessage() + (thrown != null ? " (stacktrace in " + record.getLoggerName() + " log)" : "") + "\n", a);

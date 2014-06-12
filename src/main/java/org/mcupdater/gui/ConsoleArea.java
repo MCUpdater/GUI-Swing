@@ -8,10 +8,10 @@ import javax.swing.text.StyledDocument;
 import java.awt.*;
 
 public class ConsoleArea extends JTextPane {
-	private StyledDocument doc = this.getStyledDocument();
-	public Style infoStyle = doc.addStyle("Info", null);
-	public Style warnStyle = doc.addStyle("Warning", null);
-	public Style errorStyle = doc.addStyle("Error", null);
+	private final StyledDocument doc = this.getStyledDocument();
+	public final Style infoStyle = doc.addStyle("Info", null);
+	public final Style warnStyle = doc.addStyle("Warning", null);
+	public final Style errorStyle = doc.addStyle("Error", null);
 
 	public ConsoleArea() {
 		this.setBackground(Color.white);
