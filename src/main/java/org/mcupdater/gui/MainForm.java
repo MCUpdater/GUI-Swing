@@ -754,7 +754,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 					log("Unable to get server information from " + serverUrl);
 				}
 			} catch (Exception e) {
-				log(ExceptionUtils.getStackTrace(e));
+				baseLogger.log(Level.SEVERE, "Failed to load from: " + serverUrl, e);
 			}
 		}
 		if (serverList != null) {
