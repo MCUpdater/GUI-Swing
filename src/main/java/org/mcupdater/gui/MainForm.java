@@ -113,6 +113,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 			Profile newProfile = requestLogin("");
 			if (newProfile != null) {
 				SettingsManager.getInstance().getSettings().addOrReplaceProfile(newProfile);
+				SettingsManager.getInstance().getSettings().setLastProfile(newProfile.getName());
 				SettingsManager.getInstance().fireSettingsUpdate();
 				SettingsManager.getInstance().saveSettings();
 			}
@@ -403,6 +404,10 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 				btnLaunch.setEnabled(false);
 				btnUpdate.setEnabled(false);
 				setPlaying(true);
+				if (!changeSelectedServer(selected)) {
+					setPlaying(false);
+					return;
+				}
 				Profile launchProfile = (Profile) profileModel.getSelectedItem();
 				if (!(launchProfile == null)) {
 					SettingsManager.getInstance().getSettings().setLastProfile(launchProfile.getName());
@@ -759,10 +764,13 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		}
 		if (serverList != null) {
 			((SLListModel) serverList.getModel()).clearAndSet(slList);
+			if (serverList.getSelectedIndex() > -1) {
+				changeSelectedServer(serverList.getSelectedValue());
+			}
 		}
 	}
 
-	private void changeSelectedServer(ServerList entry) {
+	private boolean changeSelectedServer(ServerList entry) {
 		frameMain.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 		this.selected = entry;
 		newsBrowser.navigate(entry.getNewsUrl());
@@ -771,7 +779,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 			frameMain.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 			JOptionPane.showMessageDialog(null, "This server pack is invalid.  Please check the console window for errors.");
 			modPanel.reload(new ArrayList<Module>(), new HashMap<String,Boolean>() );
-			return;
+			return false;
 		}
 		try {
 			Collections.sort(modList, new ModuleComparator(ModuleComparator.Mode.OPTIONAL_FIRST));
@@ -793,14 +801,17 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		boolean needUpdate = (instData.getHash().isEmpty() || !instData.getHash().equals(remoteHash));
 		boolean needNewMCU = Version.isVersionOld(entry.getMCUVersion());
 
+		frameMain.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+		baseLogger.info("Selection changed to: " + entry.getServerId());
 		if (needUpdate) {
 			JOptionPane.showMessageDialog(null, "Your configuration is out of sync with the server. Updating is necessary.", "MCUpdater", JOptionPane.WARNING_MESSAGE);
+			return false;
 		}
 		if (needNewMCU) {
 			JOptionPane.showMessageDialog(null, "The server pack indicates that it is for a newer version of MCUpdater than you are currently using.\nThis version of MCUpdater may not properly handle this server.");
+			return false;
 		}
-		frameMain.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-		baseLogger.info("Selection changed to: " + entry.getServerId());
+		return true;
 	}
 
 	private void refreshProfileList() {
