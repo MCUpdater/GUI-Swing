@@ -65,7 +65,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 	private ProfileModel profileModel;
 	private JList<ServerList> serverList;
 	private JComboBox<Profile> cboProfiles;
-	private final BrowserProxy newsBrowser = BrowserProxy.createProxy();
+	private final BrowserProxy newsBrowser;
 	private JButton btnRefresh;
 	private ServerList selected;
 	private final Gson gson = new Gson();
@@ -101,6 +101,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		MCUpdater.getInstance().setParent(this);
 		instance = this;
 		baseLogger.info("Activate interlocks!");
+		newsBrowser = BrowserProxy.createProxy();
 		initGui();
 		baseLogger.info("Dynatherms connected!");
 		bindLogic();

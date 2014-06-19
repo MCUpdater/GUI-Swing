@@ -11,6 +11,7 @@ public abstract class BrowserProxy {
 			Class.forName("javafx.scene.web.WebView");
 			return new JFXBrowser();
 		} catch (ClassNotFoundException e) {
+			MainForm.getInstance().baseLogger.warning("JavaFX was not found.  Using basic browser support.");
 			return new SwingBrowser();
 		}
 	}
