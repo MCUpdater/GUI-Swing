@@ -1,13 +1,16 @@
 package org.mcupdater.gui;
 
-import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.mcupdater.api.Version;
 
 import javax.swing.*;
+import javax.swing.event.HyperlinkEvent;
+import javax.swing.event.HyperlinkListener;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
+import java.util.logging.Level;
 
 public class SwingBrowser extends BrowserProxy {
 
@@ -20,6 +23,21 @@ public class SwingBrowser extends BrowserProxy {
 				return conn.getInputStream();
 			}
 		};
+		((JTextPane) baseComponent).setEditable(false);
+		((JTextPane) baseComponent).setContentType("text/html");
+		((JTextPane) baseComponent).addHyperlinkListener(new HyperlinkListener() {
+			@Override
+			public void hyperlinkUpdate(HyperlinkEvent e) {
+				if (e.getEventType() == HyperlinkEvent.EventType.ACTIVATED) {
+					try {
+						Object o = Class.forName("java.awt.Desktop").getMethod("getDesktop", new Class[0]).invoke(null);
+						o.getClass().getMethod("browse", new Class[] { URI.class }).invoke(o, e.getURL().toURI());
+					} catch (Exception ex) {
+						MainForm.getInstance().baseLogger.log(Level.SEVERE, "Error while trying to handle hyperlink", ex);
+					}
+				}
+			}
+		});
 	}
 
 	@Override
@@ -27,7 +45,9 @@ public class SwingBrowser extends BrowserProxy {
 		try {
 			((JTextPane) baseComponent).setPage(navigateTo);
 		} catch (IOException e) {
-			MainForm.getInstance().baseLogger.severe(ExceptionUtils.getStackTrace(e));
+			MainForm.getInstance().baseLogger.log(Level.SEVERE, "Unable to load URL: " + navigateTo, e);
+			((JTextPane) baseComponent).setDocument(((JTextPane) baseComponent).getEditorKit().createDefaultDocument());
+			((JTextPane) baseComponent).setText("<HTML><BODY>Unable to load page</BODY></HTML>");
 		}
 	}
 }
