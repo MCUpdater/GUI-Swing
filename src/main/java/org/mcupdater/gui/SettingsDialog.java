@@ -493,6 +493,10 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		btnPackRemove.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				if (lstPacks.getSelectedValue().equals(Main.getDefaultPackURL())) {
+					JOptionPane.showMessageDialog(null, "The default pack cannot be removed.\n\nThe default pack can be changed by editing the config.properties file in the MCU-Bootstrap.jar.", "MCUpdater", JOptionPane.ERROR_MESSAGE);
+					return;
+				}
 				SettingsManager.getInstance().getSettings().removePackUrl(lstPacks.getSelectedValue());
 				SettingsManager.getInstance().fireSettingsUpdate();
 				SettingsManager.getInstance().setDirty();
