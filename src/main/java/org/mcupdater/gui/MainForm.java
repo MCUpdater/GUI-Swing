@@ -547,6 +547,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		String tmpclArgs = clArgs.toString();
 		Map<String,String> fields = new HashMap<>();
 		StrSubstitutor fieldReplacer = new StrSubstitutor(fields);
+		fields.put("pack_friendly_name", selected.getName() + " (" + selected.getRevision() + ")");
 		fields.put("auth_player_name", playerName);
 		fields.put("auth_uuid", user.getUUID());
 		fields.put("auth_access_token", user.getAccessToken());
