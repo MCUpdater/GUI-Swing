@@ -547,7 +547,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		String tmpclArgs = clArgs.toString();
 		Map<String,String> fields = new HashMap<>();
 		StrSubstitutor fieldReplacer = new StrSubstitutor(fields);
-		fields.put("pack_friendly_name", selected.getName() + " (" + selected.getRevision() + ")");
+		//fields.put("pack_friendly_name", selected.getName() + " (" + selected.getRevision() + ")");
 		fields.put("auth_player_name", playerName);
 		fields.put("auth_uuid", user.getUUID());
 		fields.put("auth_access_token", user.getAccessToken());
@@ -574,6 +574,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		}
 		log("=======================");
 		final ProcessBuilder pb = new ProcessBuilder(args);
+		pb.environment().put("openeye.tags","MCUpdater," + selected.getName() + " (" + selected.getServerId() + ")");
 		pb.directory(mcu.getInstanceRoot().resolve(selected.getServerId()).toFile());
 		pb.redirectErrorStream(true);
 		final Thread gameThread = new Thread(new Runnable(){
