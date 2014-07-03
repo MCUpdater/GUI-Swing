@@ -41,13 +41,21 @@ public class SwingBrowser extends BrowserProxy {
 	}
 
 	@Override
-	public void navigate(String navigateTo) {
-		try {
-			((JTextPane) baseComponent).setPage(navigateTo);
-		} catch (IOException e) {
-			MainForm.getInstance().baseLogger.log(Level.SEVERE, "Unable to load URL: " + navigateTo, e);
-			((JTextPane) baseComponent).setDocument(((JTextPane) baseComponent).getEditorKit().createDefaultDocument());
-			((JTextPane) baseComponent).setText("<HTML><BODY>Unable to load page</BODY></HTML>");
-		}
+	public void navigate(final String navigateTo) {
+		Thread async = new Thread("News update") {
+			public void run() {
+				try
+				{
+					((JTextPane) baseComponent).setPage(navigateTo);
+				} catch ( IOException e	)
+				{
+					MainForm.getInstance().baseLogger.log(Level.SEVERE, "Unable to load URL: " + navigateTo, e);
+					((JTextPane) baseComponent).setDocument(((JTextPane) baseComponent).getEditorKit().createDefaultDocument());
+					((JTextPane) baseComponent).setText("<HTML><BODY>Unable to load page</BODY></HTML>");
+				}
+			}
+		};
+		async.setDaemon(true);
+		async.start();
 	}
 }

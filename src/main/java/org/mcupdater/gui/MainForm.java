@@ -10,6 +10,7 @@ import org.mcupdater.MCUApp;
 import org.mcupdater.Yggdrasil.SessionResponse;
 import org.mcupdater.api.Version;
 import org.mcupdater.auth.MinecraftLoginService;
+import org.mcupdater.auth.YggdrasilAuthManager;
 import org.mcupdater.downloadlib.DownloadQueue;
 import org.mcupdater.downloadlib.Downloadable;
 import org.mcupdater.downloadlib.TrackerListener;
@@ -85,6 +86,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 
 	public MainForm() {
 		self = this;
+		this.setAuthManager(new YggdrasilAuthManager());
 		SettingsManager.getInstance().addListener(this);
 		this.baseLogger = Logger.getLogger("MCUpdater");
 		baseLogger.setLevel(Level.ALL);
@@ -930,17 +932,24 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 			if (serverList.getSelectedIndex() > -1) {
 				if (!e.getValueIsAdjusting()) {
 					changeSelectedServer(serverList.getSelectedValue());
-					try {
-						if (!serverList.getSelectedValue().getAddress().isEmpty()) {
-							ServerStatus serverStatus = ServerStatus.getStatus(serverList.getSelectedValue().getAddress());
-							setStatus(serverStatus.getMOTD() + " - " + serverStatus.getPlayers() + "/" + serverStatus.getMaxPlayers());
-						} else {
-							setStatus("Server status N/A");
+					setStatus("Getting server status...");
+					Thread async = new Thread("Server status update") {
+						public void run() {
+							try {
+								if (!serverList.getSelectedValue().getAddress().isEmpty()) {
+									ServerStatus serverStatus = ServerStatus.getStatus(serverList.getSelectedValue().getAddress());
+									setStatus(serverStatus.getMOTD() + " - " + serverStatus.getPlayers() + "/" + serverStatus.getMaxPlayers());
+								} else {
+									setStatus("Server status N/A");
+								}
+							} catch (Exception e1) {
+								baseLogger.log(Level.SEVERE, "Error getting server status", e1);
+								setStatus("Server info not available");
+							}
 						}
-					} catch (Exception e1) {
-						baseLogger.log(Level.SEVERE, "Error getting server status", e1);
-						setStatus("Server info not available");
-					}
+					};
+					async.setDaemon(true);
+					async.run();
 				}
 			}
 		}
