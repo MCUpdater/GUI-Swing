@@ -1,5 +1,7 @@
 package org.mcupdater.auth;
 
+import com.mojang.authlib.exceptions.AuthenticationException;
+import com.mojang.authlib.yggdrasil.YggdrasilUserAuthentication;
 import org.jdesktop.swingx.JXLoginPane;
 import org.jdesktop.swingx.auth.LoginService;
 import org.mcupdater.AuthManager;
@@ -10,7 +12,7 @@ public class MinecraftLoginService extends LoginService {
 	private final JXLoginPane parent;
 	private final String clientToken;
 	private AuthManager auth = MainForm.getInstance().getAuthManager();
-	private SessionResponse response;
+	private Object response;
 
 	public MinecraftLoginService(JXLoginPane parent, String clientToken) {
 		this.setSynchronous(true);
@@ -21,16 +23,20 @@ public class MinecraftLoginService extends LoginService {
 	@Override
 	public boolean authenticate(String name, char[] password, String server) throws Exception {
 		response = auth.authenticate(name, new String(password), clientToken);
-		if (response.getError().isEmpty()) {
+		if (response instanceof YggdrasilUserAuthentication) {
 			return true;
-		} else {
-			MainForm.getInstance().baseLogger.warning(response.getErrorMessage());
-			parent.setErrorMessage(response.getErrorMessage());
+		} else if (response instanceof AuthenticationException) {
+			Exception error = (AuthenticationException) response;
+			MainForm.getInstance().baseLogger.warning(error.getMessage());
+			parent.setErrorMessage(error.getMessage());
 			return false;
 		}
+		MainForm.getInstance().baseLogger.severe("Authentication returned this object: " + response.toString());
+		parent.setErrorMessage("An unexpected result has occurred!");
+		return false;
 	}
 
-	public SessionResponse getResponse() {
+	public Object getResponse() {
 		return response;
 	}
 }

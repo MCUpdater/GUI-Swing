@@ -1,13 +1,14 @@
 package org.mcupdater.gui;
 
 import com.google.gson.Gson;
+import com.mojang.authlib.UserType;
+import com.mojang.authlib.yggdrasil.YggdrasilUserAuthentication;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.text.StrSubstitutor;
 import org.jdesktop.swingx.JXLoginPane;
 import org.mcupdater.FMLStyleFormatter;
 import org.mcupdater.MCUApp;
-import org.mcupdater.Yggdrasil.SessionResponse;
 import org.mcupdater.api.Version;
 import org.mcupdater.auth.MinecraftLoginService;
 import org.mcupdater.auth.YggdrasilAuthManager;
@@ -549,7 +550,6 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		String tmpclArgs = clArgs.toString();
 		Map<String,String> fields = new HashMap<>();
 		StrSubstitutor fieldReplacer = new StrSubstitutor(fields);
-		//fields.put("pack_friendly_name", selected.getName() + " (" + selected.getRevision() + ")");
 		fields.put("auth_player_name", playerName);
 		fields.put("auth_uuid", user.getUUID());
 		fields.put("auth_access_token", user.getAccessToken());
@@ -558,10 +558,15 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		fields.put("game_directory", mcu.getInstanceRoot().resolve(selected.getServerId()).toString());
 		if (index.isVirtual()) {
 			fields.put("game_assets", mcu.getArchiveFolder().resolve("assets").resolve("virtual").toString());
+			fields.put("assets_root", mcu.getArchiveFolder().resolve("assets").resolve("virtual").toString());
 		} else {
 			fields.put("game_assets", mcu.getArchiveFolder().resolve("assets").toString());
+			fields.put("assets_root", mcu.getArchiveFolder().resolve("assets").toString());
 		}
+		fields.put("assets_index_name", indexName);
 		fields.put("resource_packs", mcu.getInstanceRoot().resolve(selected.getServerId()).resolve("resourcepacks").toString());
+		fields.put("user_properties", "{}"); //TODO: This will likely actually get used at some point.
+		fields.put("user_type", (user.isLegacy() ? UserType.LEGACY.toString() : UserType.MOJANG.toString()));
 		String[] fieldArr = tmpclArgs.split(" ");
 		for (int i = 0; i < fieldArr.length; i++) {
 			fieldArr[i] = fieldReplacer.replace(fieldArr[i]);
@@ -846,16 +851,18 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		MinecraftLoginService loginService = new MinecraftLoginService(login, UUID.randomUUID().toString());
 		login.setLoginService(loginService);
 		JXLoginPane.showLoginDialog(frameMain, login);
-		SessionResponse response = loginService.getResponse();
+		Object response = loginService.getResponse();
 		Profile newProfile = null;
-		if (response != null && response.getError().isEmpty()) {
+		if (response instanceof YggdrasilUserAuthentication) {
+			YggdrasilUserAuthentication user = (YggdrasilUserAuthentication) response;
 			newProfile = new Profile();
 			newProfile.setStyle("Yggdrasil");
 			newProfile.setUsername(login.getUserName());
-			newProfile.setAccessToken(response.getAccessToken());
-			newProfile.setClientToken(response.getClientToken());
-			newProfile.setName(response.getSelectedProfile().getName());
-			newProfile.setUUID(response.getSelectedProfile().getId());
+			newProfile.setAccessToken(user.getAuthenticatedToken());
+			newProfile.setName(user.getSelectedProfile().getName());
+			newProfile.setUUID(user.getSelectedProfile().getId().toString());
+			newProfile.setUserId(user.getUserID());
+			newProfile.setLegacy((UserType.LEGACY == user.getUserType()));
 		}
 		return newProfile;
 	}
