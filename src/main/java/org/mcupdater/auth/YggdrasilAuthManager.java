@@ -45,7 +45,7 @@ public class YggdrasilAuthManager extends AuthManager {
 				SettingsManager.getInstance().saveSettings();
 			}
 		}
-		return "token:" + auth.getAuthenticatedToken() + ":" + auth.getSelectedProfile().getId().toString();
+		return "token:" + auth.getAuthenticatedToken() + ":" + auth.getSelectedProfile().getId().toString().replace("-","");
 	}
 
 	@Override
