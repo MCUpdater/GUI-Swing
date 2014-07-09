@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.mojang.authlib.UserType;
 import com.mojang.authlib.yggdrasil.YggdrasilUserAuthentication;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.text.StrSubstitutor;
 import org.jdesktop.swingx.JXLoginPane;
@@ -47,8 +48,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -395,7 +398,19 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 						}
 					}
 					//TODO: Add hard update option
-					MCUpdater.getInstance().installMods(selected, selectedMods, selectedConfigs, instPath, false, instData, ModSide.CLIENT);
+					Map<String,String> libOverrides = new HashMap<>();
+					try {
+						URL libOverridesUrl = new URI("http://files.mcupdater.com/liboverrides.dat").toURL();
+						BufferedReader reader = new BufferedReader(new InputStreamReader(libOverridesUrl.openStream()));
+						String entry;
+						while((entry = reader.readLine()) != null) {
+							String key = StringUtils.join(Arrays.copyOfRange(entry.split(":"),0,2),":");
+							libOverrides.put(key, entry);
+						}
+					} catch (URISyntaxException e1) {
+						baseLogger.log(Level.SEVERE, "Unable to get library overrides!", e1);
+					}
+					MCUpdater.getInstance().installMods(selected, selectedMods, selectedConfigs, instPath, false, instData, ModSide.CLIENT, libOverrides);
 				} catch (IOException e1) {
 					baseLogger.log(Level.SEVERE, "Unable to create directory for instance!", e1);
 				}
@@ -534,7 +549,23 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 				}
 			}
 		}
+		Map<String,String> libOverrides = new HashMap<>();
+		try {
+			URL libOverridesUrl = new URI("http://files.mcupdater.com/liboverrides.dat").toURL();
+			BufferedReader reader = new BufferedReader(new InputStreamReader(libOverridesUrl.openStream()));
+			String entry;
+			while((entry = reader.readLine()) != null) {
+				String key = StringUtils.join(Arrays.copyOfRange(entry.split(":"),0,2),":");
+				libOverrides.put(key, entry);
+			}
+		} catch (URISyntaxException e1) {
+			baseLogger.log(Level.SEVERE, "Unable to get library overrides!", e1);
+		}
 		for (Library lib : mcVersion.getLibraries()) {
+			String key = StringUtils.join(Arrays.copyOfRange(lib.getName().split(":"),0,2),":");
+			if (libOverrides.containsKey(key)) {
+				lib.setName(libOverrides.get(key));
+			}
 			if (lib.validForOS() && !lib.hasNatives()) {
 				libs.add(lib.getFilename());
 			}
