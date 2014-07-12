@@ -48,7 +48,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -362,7 +361,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 						instData = new Instance();
 					}
 					Set<String> digests = new HashSet<>();
-					List<Module> fullModList = ServerPackParser.loadFromURL(selected.getPackUrl(), selected.getServerId());
+					List<Module> fullModList = new ArrayList<>(ServerPackParser.loadFromURL(selected.getPackUrl(), selected.getServerId()).getModules().values());
 					for (Module mod : fullModList) {
 						if (!mod.getMD5().isEmpty()) {
 							digests.add(mod.getMD5());
@@ -410,7 +409,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 					} catch (URISyntaxException e1) {
 						baseLogger.log(Level.SEVERE, "Unable to get library overrides!", e1);
 					}
-					MCUpdater.getInstance().installMods(selected, selectedMods, selectedConfigs, instPath, false, instData, ModSide.CLIENT, libOverrides);
+					MCUpdater.getInstance().installMods(selected, selectedMods, selectedConfigs, instPath, false, instData, ModSide.CLIENT);
 				} catch (IOException e1) {
 					baseLogger.log(Level.SEVERE, "Unable to create directory for instance!", e1);
 				}
@@ -549,22 +548,10 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 				}
 			}
 		}
-		Map<String,String> libOverrides = new HashMap<>();
-		try {
-			URL libOverridesUrl = new URI("http://files.mcupdater.com/liboverrides.dat").toURL();
-			BufferedReader reader = new BufferedReader(new InputStreamReader(libOverridesUrl.openStream()));
-			String entry;
-			while((entry = reader.readLine()) != null) {
-				String key = StringUtils.join(Arrays.copyOfRange(entry.split(":"),0,2),":");
-				libOverrides.put(key, entry);
-			}
-		} catch (URISyntaxException e1) {
-			baseLogger.log(Level.SEVERE, "Unable to get library overrides!", e1);
-		}
 		for (Library lib : mcVersion.getLibraries()) {
 			String key = StringUtils.join(Arrays.copyOfRange(lib.getName().split(":"),0,2),":");
-			if (libOverrides.containsKey(key)) {
-				lib.setName(libOverrides.get(key));
+			if (selected.getLibOverrides().containsKey(key)) {
+				lib.setName(selected.getLibOverrides().get(key));
 			}
 			if (lib.validForOS() && !lib.hasNatives()) {
 				libs.add(lib.getFilename());
@@ -815,13 +802,8 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		frameMain.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 		this.selected = entry;
 		newsBrowser.navigate(entry.getNewsUrl());
-		List<Module> modList = ServerPackParser.loadFromURL(entry.getPackUrl(), entry.getServerId());
-		if (modList == null) {
-			frameMain.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-			JOptionPane.showMessageDialog(null, "This server pack is invalid.  Please check the console window for errors.");
-			modPanel.reload(new ArrayList<Module>(), new HashMap<String,Boolean>() );
-			return false;
-		}
+		entry = ServerPackParser.loadFromURL(entry.getPackUrl(), entry.getServerId());
+        List<Module> modList = new ArrayList<>(entry.getModules().values());
 		try {
 			Collections.sort(modList, new ModuleComparator(ModuleComparator.Mode.OPTIONAL_FIRST));
 		} catch (Exception e) {
