@@ -361,7 +361,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 						instData = new Instance();
 					}
 					Set<String> digests = new HashSet<>();
-					List<Module> fullModList = new ArrayList<>(ServerPackParser.loadFromURL(selected.getPackUrl(), selected.getServerId()).getModules().values());
+					List<Module> fullModList = new ArrayList<>(selected.getModules().values());
 					for (Module mod : fullModList) {
 						if (!mod.getMD5().isEmpty()) {
 							digests.add(mod.getMD5());
@@ -397,6 +397,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 						}
 					}
 					//TODO: Add hard update option
+/*
 					Map<String,String> libOverrides = new HashMap<>();
 					try {
 						URL libOverridesUrl = new URI("http://files.mcupdater.com/liboverrides.dat").toURL();
@@ -409,6 +410,8 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 					} catch (URISyntaxException e1) {
 						baseLogger.log(Level.SEVERE, "Unable to get library overrides!", e1);
 					}
+*/
+                    System.out.println("overrides: " + selected.getLibOverrides().size());
 					MCUpdater.getInstance().installMods(selected, selectedMods, selectedConfigs, instPath, false, instData, ModSide.CLIENT);
 				} catch (IOException e1) {
 					baseLogger.log(Level.SEVERE, "Unable to create directory for instance!", e1);
@@ -776,7 +779,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 							docEle = (Element) servers.item(i);
 							ServerList sl = ServerList.fromElement(mcuVersion, serverUrl, docEle);
 							if (!sl.isFakeServer()) {
-								slList.add(sl);
+								slList.add(ServerPackParser.parseDocument(serverHeader,sl.getServerId()));
 							}
 						}
 					} else {
@@ -802,7 +805,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		frameMain.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 		this.selected = entry;
 		newsBrowser.navigate(entry.getNewsUrl());
-		entry = ServerPackParser.loadFromURL(entry.getPackUrl(), entry.getServerId());
+		//entry = ServerPackParser.loadFromURL(entry.getPackUrl(), entry.getServerId());
         List<Module> modList = new ArrayList<>(entry.getModules().values());
 		try {
 			Collections.sort(modList, new ModuleComparator(ModuleComparator.Mode.OPTIONAL_FIRST));
