@@ -50,7 +50,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -514,7 +513,9 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		args.add("-Xms" + settings.getMinMemory());
 		args.add("-Xmx" + settings.getMaxMemory());
 		args.add("-XX:PermSize=" + settings.getPermGen());
-		args.addAll(Arrays.asList(settings.getJvmOpts().split(" ")));
+		if (!settings.getJvmOpts().isEmpty()) {
+			args.addAll(Arrays.asList(settings.getJvmOpts().split(" ")));
+		}
 		if (System.getProperty("os.name").startsWith("Mac")) {
 			args.add("-Xdock:icon=" + mcu.getArchiveFolder().resolve("assets").resolve("icons").resolve("minecraft.icns").toString());
 			args.add("-Xdock:name=Minecraft(MCUpdater)");
