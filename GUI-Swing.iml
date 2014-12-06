@@ -16,17 +16,6 @@
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="module" module-name="MCU-DownloadLib" exported="" />
     <orderEntry type="module" module-name="MCU-API" exported="" />
-    <orderEntry type="module-library" exported="">
-      <library name="Gradle: jfxrt">
-        <CLASSES>
-          <root url="jar:///usr/lib/jvm/java-7-oracle/jre/lib/jfxrt.jar!/" />
-          <root url="jar:///usr/lib/jvm/java-7-oracle/jre/lib/jfxrt.jar!/" />
-          <root url="jar:///usr/lib/jvm/java-7-oracle/jre/lib/jfxrt.jar!/" />
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES />
-      </library>
-    </orderEntry>
     <orderEntry type="library" exported="" name="Gradle: com.mojang:authlib:1.5.13" level="project" />
     <orderEntry type="library" exported="" name="Gradle: org.apache.commons:commons-lang3:3.2.1" level="project" />
     <orderEntry type="library" exported="" name="Gradle: net.sf.jopt-simple:jopt-simple:4.6" level="project" />
@@ -37,5 +26,14 @@
     <orderEntry type="library" exported="" name="Gradle: org.apache.logging.log4j:log4j-core:2.0-rc2" level="project" />
     <orderEntry type="library" exported="" name="Gradle: com.google.guava:guava:16.0" level="project" />
     <orderEntry type="library" exported="" name="Gradle: commons-codec:commons-codec:1.9" level="project" />
+    <orderEntry type="module-library" exported="">
+      <library name="Gradle: jfxrt">
+        <CLASSES>
+          <root url="jar:///usr/lib/jvm/java-7-oracle/jre/lib/jfxrt.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES />
+      </library>
+    </orderEntry>
   </component>
 </module>
