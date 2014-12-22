@@ -831,7 +831,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		frameMain.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 		baseLogger.info("Selection changed to: " + entry.getServerId());
 		if (needUpdate) {
-			JOptionPane.showMessageDialog(null, "Your configuration is out of sync with the server. Updating is necessary.", "MCUpdater", JOptionPane.WARNING_MESSAGE);
+			JOptionPane.showMessageDialog(null, "<html>Your configuration for <b>"+entry.getName()+"</b> is out of sync with the server.<br/>Updating is necessary.</html>", "MCUpdater", JOptionPane.WARNING_MESSAGE);
 			return false;
 		}
 		if (needNewMCU) {
