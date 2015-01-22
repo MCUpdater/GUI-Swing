@@ -9,10 +9,10 @@ import java.util.logging.Level;
 public class ConsoleForm {
 	private final CALogHandler consoleHandler;
 	private final ConsoleArea console;
-	private final JFrame window;
+	private final JDialog window;
 
 	public ConsoleForm(String title) {
-		window = new JFrame();
+		window = new JDialog();
 		window.setIconImage(new ImageIcon(this.getClass().getResource("mcu-icon.png")).getImage());
 		window.setTitle(title);
 		window.setBounds(25, 25, 500, 500);
