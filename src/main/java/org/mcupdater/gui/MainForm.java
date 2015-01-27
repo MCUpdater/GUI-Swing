@@ -832,12 +832,15 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		baseLogger.info("Selection changed to: " + entry.getServerId());
 		if (needUpdate) {
 			JOptionPane.showMessageDialog(null, "<html>Your configuration for <b>"+entry.getName()+"</b> is out of sync with the server.<br/>Updating is necessary.</html>", "MCUpdater", JOptionPane.WARNING_MESSAGE);
+			entry.setState(ServerList.State.UPDATE);
 			return false;
 		}
 		if (needNewMCU) {
 			JOptionPane.showMessageDialog(null, "The server pack indicates that it is for a newer version of MCUpdater than you are currently using.\nThis version of MCUpdater may not properly handle this server.");
+			entry.setState(ServerList.State.ERROR);
 			return false;
 		}
+		entry.setState(ServerList.State.READY);
 		return true;
 	}
 

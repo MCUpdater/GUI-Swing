@@ -12,9 +12,7 @@ import java.net.URL;
 final class ServerListCellRenderer extends JPanel implements ListCellRenderer<ServerList> {
 	private static final int LIST_CELL_ICON_SIZE = 32;
 
-	@SuppressWarnings("unused")
 	public final ImageIcon STATUS_ERROR = new ImageIcon(this.getClass().getResource("cross.png"));
-	@SuppressWarnings("unused")
 	public final ImageIcon STATUS_UPDATE = new ImageIcon(this.getClass().getResource("asterisk_yellow.png"));
 	public final ImageIcon STATUS_READY = new ImageIcon(this.getClass().getResource("tick.png"));
 
@@ -25,10 +23,6 @@ final class ServerListCellRenderer extends JPanel implements ListCellRenderer<Se
 	private JLabel lblServerName;
 	private JLabel lblMCVersion;
 	private JLabel lblPackVersion;
-
-	public void setStatus(ImageIcon icon) {
-		lblStatus.setIcon(icon);
-	}
 
 	public ServerListCellRenderer() {
 		lblServerName = new JLabel(" ");
@@ -47,7 +41,6 @@ final class ServerListCellRenderer extends JPanel implements ListCellRenderer<Se
 		lblStatus = new JLabel();
 		lblStatus.setOpaque(false);
 		lblStatus.setBounds(0,0,16,16);
-		setStatus(STATUS_READY);
 
 		paneIcon = new JLayeredPane();
 		paneIcon.add(lblIcon, JLayeredPane.DEFAULT_LAYER);
@@ -95,6 +88,15 @@ final class ServerListCellRenderer extends JPanel implements ListCellRenderer<Se
 		Graphics g = bi.createGraphics();
 		g.drawImage(img, 0, 0, 32, 32, lblIcon);
 		lblIcon.setIcon(new ImageIcon(bi));
+
+		switch( entry.getState() ) {
+			case READY: lblStatus.setIcon(STATUS_READY); break;
+			case UPDATE: lblStatus.setIcon(STATUS_UPDATE); break;
+			case ERROR: lblStatus.setIcon(STATUS_UPDATE); break;
+			case UNKNOWN:
+			default:
+				lblStatus.setIcon(null);
+		}
 
 		if (isSelected) {
 			adjustColors(list.getSelectionBackground(), list.getSelectionForeground(), this, lblIcon, lblServerName, lblMCVersion, lblPackVersion);
