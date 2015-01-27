@@ -12,27 +12,53 @@ import java.net.URL;
 final class ServerListCellRenderer extends JPanel implements ListCellRenderer<ServerList> {
 	private static final int LIST_CELL_ICON_SIZE = 32;
 
+	@SuppressWarnings("unused")
+	public final ImageIcon STATUS_ERROR = new ImageIcon(this.getClass().getResource("cross.png"));
+	@SuppressWarnings("unused")
+	public final ImageIcon STATUS_UPDATE = new ImageIcon(this.getClass().getResource("asterisk_yellow.png"));
+	public final ImageIcon STATUS_READY = new ImageIcon(this.getClass().getResource("tick.png"));
+
+	private JLayeredPane paneIcon;
+	private JLabel lblStatus;
+
 	private JLabel lblIcon;
 	private JLabel lblServerName;
 	private JLabel lblMCVersion;
 	private JLabel lblPackVersion;
 
+	public void setStatus(ImageIcon icon) {
+		lblStatus.setIcon(icon);
+	}
+
 	public ServerListCellRenderer() {
 		lblServerName = new JLabel(" ");
 		lblMCVersion = new JLabel(" ");
 		lblPackVersion = new JLabel(" ");
+
+		int imageSize = LIST_CELL_ICON_SIZE + 4;
+
 		lblIcon = new JLabel();
 		lblIcon.setOpaque(true);
 		lblIcon.setHorizontalAlignment(JLabel.CENTER);
 		lblIcon.setVerticalAlignment(JLabel.CENTER);
 		lblIcon.setBackground(Color.WHITE);
-		int imageSize = LIST_CELL_ICON_SIZE + 4;
+		lblIcon.setBounds(0,0,imageSize+10, imageSize+10);
+
+		lblStatus = new JLabel();
+		lblStatus.setOpaque(false);
+		lblStatus.setBounds(0,0,16,16);
+		setStatus(STATUS_READY);
+
+		paneIcon = new JLayeredPane();
+		paneIcon.add(lblIcon, JLayeredPane.DEFAULT_LAYER);
+		paneIcon.add(lblStatus, JLayeredPane.POPUP_LAYER);
+
 		GroupLayout layout = new GroupLayout(this);
 		setLayout(layout);
 		GroupLayout.SequentialGroup hg = layout.createSequentialGroup();
 		layout.setHorizontalGroup(hg);
 		hg.
-				addComponent(lblIcon, imageSize, imageSize + 10, imageSize + 10).
+				addComponent(paneIcon, imageSize, imageSize + 10, imageSize + 10).
 				addGroup(layout.createParallelGroup().
 						addComponent(lblServerName, 50, 125, Integer.MAX_VALUE).
 						addComponent(lblMCVersion, 50, 125, Integer.MAX_VALUE).
@@ -41,7 +67,7 @@ final class ServerListCellRenderer extends JPanel implements ListCellRenderer<Se
 		GroupLayout.ParallelGroup vg = layout.createParallelGroup();
 		layout.setVerticalGroup(vg);
 		vg.
-				addComponent(lblIcon, GroupLayout.Alignment.CENTER, imageSize, imageSize + 10, imageSize + 10).
+				addComponent(paneIcon, GroupLayout.Alignment.CENTER, imageSize, imageSize + 10, imageSize + 10).
 				addGroup(GroupLayout.Alignment.CENTER, layout.createSequentialGroup().
 						addComponent(lblServerName).
 						addComponent(lblMCVersion).
@@ -49,8 +75,7 @@ final class ServerListCellRenderer extends JPanel implements ListCellRenderer<Se
 	}
 
 	@Override
-	public Component getListCellRendererComponent(JList<? extends ServerList> list, ServerList value, int index, boolean isSelected, boolean cellHasFocus) {
-		ServerList entry = value;
+	public Component getListCellRendererComponent(JList<? extends ServerList> list, ServerList entry, int index, boolean isSelected, boolean cellHasFocus) {
 		String serverName = entry.getName();
 		Font fontInfo = new Font("SansSerif", Font.PLAIN, 10);
 		lblServerName.setText(serverName);
