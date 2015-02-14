@@ -99,10 +99,8 @@ final class ServerListCellRenderer extends JPanel implements ListCellRenderer<Se
 		}
 
 		if (isSelected) {
-			System.out.println("Selected: " + list.getSelectionBackground().toString() + " " + list.getSelectionForeground());
 			adjustColors(list.getSelectionBackground(), list.getSelectionForeground(), this, lblIcon, lblServerName, lblMCVersion, lblPackVersion);
 		} else {
-			System.out.println(list.getBackground().toString() + " " + list.getForeground());
 			adjustColors(list.getBackground(), list.getForeground(), this, lblIcon, lblServerName, lblMCVersion, lblPackVersion);
 		}
 		return this;
