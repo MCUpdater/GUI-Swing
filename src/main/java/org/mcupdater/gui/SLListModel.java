@@ -34,7 +34,11 @@ public class SLListModel extends AbstractListModel<ServerList> {
 
 	@Override
 	public ServerList getElementAt(int index) {
-		return model.get(index);
+		ServerList entry = null;
+		try {
+			entry = model.get(index);
+		} catch (IndexOutOfBoundsException ignored) {}
+		return entry;
 	}
 
 	public void add(ServerList element) {

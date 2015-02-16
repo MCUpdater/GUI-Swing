@@ -130,6 +130,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 			private ServerList currentSelection;
 			private int activeJobs = 0;
 			private boolean playState;
+			private boolean needsRefresh;
 
 			@SuppressWarnings("InfiniteLoopStatement")
 			@Override
@@ -146,8 +147,13 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 									instanceTabs.setTitleAt(instanceTabs.indexOfComponent(progressScroller),"Progress - " + activeJobs + " active");
 									if (activeJobs > 0) {
 										btnLaunch.setEnabled(false);
+										needsRefresh = true;
 									} else {
-										if (!(currentSelection == null) && !playState) {
+										if (needsRefresh) {
+											refreshInstanceList();
+											needsRefresh = false;
+										}
+										if (!(currentSelection == null) && !playState && currentSelection.getState().equals(ServerList.State.READY)) {
 											btnLaunch.setEnabled(true);
 										} else {
 											btnLaunch.setEnabled(false);
@@ -781,11 +787,16 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 							docEle = (Element) servers.item(i);
 							ServerList sl = ServerList.fromElement(mcuVersion, serverUrl, docEle);
 							if (!sl.isFakeServer()) {
-								slList.add(ServerPackParser.parseDocument(serverHeader,sl.getServerId()));
+								ServerList newEntry = ServerPackParser.parseDocument(serverHeader,sl.getServerId());
+								Instance instData = new Instance();
+								newEntry.setState(getPackState(newEntry, instData));
+								slList.add(newEntry);
 							}
 						}
 					} else {
 						ServerList sl = ServerList.fromElement("1.0", serverUrl, parent);
+						Instance instData = new Instance();
+						sl.setState(getPackState(sl, instData));
 						slList.add(sl);
 					}
 				} else {
@@ -808,15 +819,32 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		this.selected = entry;
 		newsBrowser.navigate(entry.getNewsUrl());
 		//entry = ServerPackParser.loadFromURL(entry.getPackUrl(), entry.getServerId());
-        List<Module> modList = new ArrayList<>(entry.getModules().values());
+		List<Module> modList = new ArrayList<>(entry.getModules().values());
+		Instance instData = new Instance();
+		entry.setState(getPackState(entry, instData));
 		try {
 			Collections.sort(modList, new ModuleComparator(ModuleComparator.Mode.OPTIONAL_FIRST));
 		} catch (Exception e) {
 			baseLogger.warning("Unable to sort mod list!");
 		}
+		modPanel.reload(modList, instData.getOptionalMods());
+
+		frameMain.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+		baseLogger.info("Selection changed to: " + entry.getServerId());
+		if (entry.getState().equals(ServerList.State.UPDATE)) {
+			JOptionPane.showMessageDialog(null, "<html>Your configuration for <b>" + entry.getName() + "</b> is out of sync with the server.<br/>Updating is necessary.</html>", "MCUpdater", JOptionPane.WARNING_MESSAGE);
+			return false;
+		}
+		if (entry.getState().equals(ServerList.State.ERROR)) {
+			JOptionPane.showMessageDialog(null, "The server pack indicates that it is for a newer version of MCUpdater than you are currently using.\nThis version of MCUpdater may not properly handle this server.");
+			return false;
+		}
+		return true;
+	}
+
+	private ServerList.State getPackState(ServerList entry, Instance instData) {
 		Set<String> digests = entry.getDigests();
 		String remoteHash = MCUpdater.calculateGroupHash(digests);
-		Instance instData = new Instance();
 		final Path instanceFile = MCUpdater.getInstance().getInstanceRoot().resolve(entry.getServerId()).resolve("instance.json");
 		try {
 			BufferedReader reader = Files.newBufferedReader(instanceFile, StandardCharsets.UTF_8);
@@ -825,24 +853,11 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		} catch (IOException e) {
 			baseLogger.log(Level.WARNING, "instance.json file not found.  This is not an error if the instance has not been installed.");
 		}
-		modPanel.reload(modList, instData.getOptionalMods());
 		boolean needUpdate = (instData.getHash().isEmpty() || !instData.getHash().equals(remoteHash));
 		boolean needNewMCU = Version.isVersionOld(entry.getMCUVersion());
-
-		frameMain.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
-		baseLogger.info("Selection changed to: " + entry.getServerId());
-		if (needUpdate) {
-			JOptionPane.showMessageDialog(null, "<html>Your configuration for <b>"+entry.getName()+"</b> is out of sync with the server.<br/>Updating is necessary.</html>", "MCUpdater", JOptionPane.WARNING_MESSAGE);
-			entry.setState(ServerList.State.UPDATE);
-			return false;
-		}
-		if (needNewMCU) {
-			JOptionPane.showMessageDialog(null, "The server pack indicates that it is for a newer version of MCUpdater than you are currently using.\nThis version of MCUpdater may not properly handle this server.");
-			entry.setState(ServerList.State.ERROR);
-			return false;
-		}
-		entry.setState(ServerList.State.READY);
-		return true;
+		if (needUpdate) { return ServerList.State.UPDATE; }
+		if (needNewMCU) { return ServerList.State.ERROR; }
+		return ServerList.State.READY;
 	}
 
 	private void refreshProfileList() {
