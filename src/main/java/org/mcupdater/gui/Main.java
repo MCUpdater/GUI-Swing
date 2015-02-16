@@ -33,6 +33,8 @@ public class Main {
 				SettingsManager.getInstance().loadSettings();
 				MCUpdater.getInstance().setInstanceRoot(new File(SettingsManager.getInstance().getSettings().getInstanceRoot()).toPath());
 				try {
+					UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+					/*
 					if (options.has("syslf")) {
 						UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 					}   else {
@@ -47,6 +49,7 @@ public class Main {
 							UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 						}
 					}
+					*/
 					UIManager.addAuxiliaryLookAndFeel(new LookAndFeel() {
 						private final UIDefaults defaults = new UIDefaults() {
 							@Override
