@@ -232,6 +232,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		{
 			JScrollPane modScroller = new JScrollPane(modPanel);
 			modScroller.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+			modScroller.getVerticalScrollBar().setUnitIncrement(16);
 			progressScroller = new JScrollPane(progressView);
 			progressScroller.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 			instanceTabs = new JTabbedPane();
