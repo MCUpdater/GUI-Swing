@@ -56,6 +56,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -789,14 +790,16 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 							if (!sl.isFakeServer()) {
 								ServerList newEntry = ServerPackParser.parseDocument(serverHeader,sl.getServerId());
 								Instance instData = new Instance();
-								newEntry.setState(getPackState(newEntry, instData));
+								AtomicReference<Instance> ref = new AtomicReference<>(instData);
+								newEntry.setState(getPackState(newEntry, ref));
 								slList.add(newEntry);
 							}
 						}
 					} else {
 						ServerList sl = ServerList.fromElement("1.0", serverUrl, parent);
 						Instance instData = new Instance();
-						sl.setState(getPackState(sl, instData));
+						AtomicReference<Instance> ref = new AtomicReference<>(instData);
+						sl.setState(getPackState(sl, ref));
 						slList.add(sl);
 					}
 				} else {
@@ -821,7 +824,10 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		//entry = ServerPackParser.loadFromURL(entry.getPackUrl(), entry.getServerId());
 		List<Module> modList = new ArrayList<>(entry.getModules().values());
 		Instance instData = new Instance();
-		entry.setState(getPackState(entry, instData));
+		AtomicReference<Instance> ref = new AtomicReference<>(instData);
+		entry.setState(getPackState(entry, ref));
+		instData = ref.get();
+		System.out.println(instData.toString());
 		try {
 			Collections.sort(modList, new ModuleComparator(ModuleComparator.Mode.OPTIONAL_FIRST));
 		} catch (Exception e) {
@@ -842,13 +848,15 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		return true;
 	}
 
-	private ServerList.State getPackState(ServerList entry, Instance instData) {
+	private ServerList.State getPackState(ServerList entry, AtomicReference<Instance> ref) {
 		Set<String> digests = entry.getDigests();
 		String remoteHash = MCUpdater.calculateGroupHash(digests);
 		final Path instanceFile = MCUpdater.getInstance().getInstanceRoot().resolve(entry.getServerId()).resolve("instance.json");
+		Instance instData = ref.get();
 		try {
 			BufferedReader reader = Files.newBufferedReader(instanceFile, StandardCharsets.UTF_8);
 			instData = gson.fromJson(reader, Instance.class);
+			ref.getAndSet(instData);
 			reader.close();
 		} catch (IOException e) {
 			baseLogger.log(Level.WARNING, "instance.json file not found.  This is not an error if the instance has not been installed.");
