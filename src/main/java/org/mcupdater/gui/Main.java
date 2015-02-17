@@ -22,11 +22,19 @@ public class Main {
 		optParser.allowsUnrecognizedOptions();
 		ArgumentAcceptingOptionSpec<String> packSpec = optParser.accepts("ServerPack").withRequiredArg().ofType(String.class);
 		ArgumentAcceptingOptionSpec<File> rootSpec = optParser.accepts("MCURoot").withRequiredArg().ofType(File.class);
-		optParser.accepts("syslf","Use OS-specific look and feel");
+		ArgumentAcceptingOptionSpec<String> memSpec = optParser.accepts("defaultMem").withRequiredArg().ofType(String.class);
+		ArgumentAcceptingOptionSpec<String> permSpec = optParser.accepts("defaultPerm").withRequiredArg().ofType(String.class);
+		//optParser.accepts("syslf","Use OS-specific look and feel");
 		NonOptionArgumentSpec<String> nonOpts = optParser.nonOptions();
 		final OptionSet options = optParser.parse(args);
 		passthroughArgs = options.valuesOf(nonOpts);
 		MCUpdater.getInstance(options.valueOf(rootSpec));
+		if (options.has(memSpec)) {
+			MCUpdater.defaultMemory = options.valueOf(memSpec);
+		}
+		if (options.has(permSpec)) {
+			MCUpdater.defaultPermGen = options.valueOf(permSpec);
+		}
 		setDefaultPackURL(options.valueOf(packSpec));
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
