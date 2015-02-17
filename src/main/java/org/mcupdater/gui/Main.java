@@ -71,7 +71,7 @@ public class Main {
 								return null;
 							}
 						};
-						@Override public UIDefaults getDefaults() { return defaults; };
+						@Override public UIDefaults getDefaults() { return defaults; }
 						@Override public String getID() { return "TextContextMenu"; }
 						@Override public String getName() { return getID(); }
 						@Override public String getDescription() { return getID(); }
