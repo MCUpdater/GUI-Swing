@@ -82,9 +82,13 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 			GridBagConstraints gbcNormal = new GridBagConstraints();
 			lblStatus = new JLabel();
 			btnSave = new JButton("Save");
+			btnSave.setToolTipText("Apply and save settings");
 			btnReload = new JButton("Reload");
+			btnReload.setToolTipText("Reload settings");
 			btnApply = new JButton("Apply");
+			btnApply.setToolTipText("Apply settings for this session");
 			btnCancel = new JButton("Cancel");
+			btnCancel.setToolTipText("Cancel unapplied changes");
 			pnlActions.add(new JLabel("Save status: "), gbcNormal);
 			pnlActions.add(lblStatus, gbcFillWidth);
 			pnlActions.add(btnSave, gbcNormal);
