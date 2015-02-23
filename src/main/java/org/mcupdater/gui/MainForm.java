@@ -51,7 +51,6 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -474,6 +473,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 	}
 
 	private void tryNewLaunch(final ServerList selected, Collection<ModuleWidget> modules, Profile user) throws Exception {
+		Path javaPath = getJava();
 		String playerName = user.getName();
 		String sessionKey = user.getSessionKey(this);
 		MinecraftVersion mcVersion = MinecraftVersion.loadVersion(selected.getVersion());
@@ -513,11 +513,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		if (!settings.getProgramWrapper().isEmpty()) {
 			args.add(settings.getProgramWrapper());
 		}
-		if (System.getProperty("os.name").startsWith("Win")) {
-			args.add((new File(settings.getJrePath()).toPath().resolve("bin").resolve("javaw.exe").toString()));
-		} else {
-			args.add((new File(settings.getJrePath()).toPath().resolve("bin").resolve("java").toString()));
-		}
+		args.add(javaPath.toString());
 		args.add("-Xms" + settings.getMinMemory());
 		args.add("-Xmx" + settings.getMaxMemory());
 		args.add("-XX:PermSize=" + settings.getPermGen());
@@ -651,7 +647,22 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		gameThread.start();
 	}
 
+	private Path getJava() throws Exception {
+		Path javaFile;
+		if (System.getProperty("os.name").startsWith("Win")) {
+			javaFile = new File(SettingsManager.getInstance().getSettings().getJrePath()).toPath().resolve("bin").resolve("javaw.exe");
+		} else {
+			javaFile = new File(SettingsManager.getInstance().getSettings().getJrePath()).toPath().resolve("bin").resolve("java");
+		}
+		if (Files.exists(javaFile)) {
+			return javaFile;
+		} else {
+			throw new Exception("Java executable not found at specified JRE path!");
+		}
+	}
+
 	private void tryOldLaunch(final ServerList selected, Profile user) throws Exception {
+		Path javaPath = getJava();
 		Path mcuPath = MCUpdater.getInstance().getArchiveFolder();
 		final Settings settings = SettingsManager.getInstance().getSettings();
 		Path instancePath = MCUpdater.getInstance().getInstanceRoot().resolve(selected.getServerId());
@@ -661,30 +672,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		if (!settings.getProgramWrapper().isEmpty()) {
 			args.add(settings.getProgramWrapper());
 		}
-		Path jrePath = FileSystems.getDefault().getPath(settings.getJrePath());
-		if (System.getProperty("os.name").startsWith("Win")) {
-			if (Files.exists(jrePath.resolve("bin").resolve("javaw.exe"))) {
-				args.add(jrePath.resolve("bin").resolve("javaw.exe").toString());
-			} else {
-				throw new Exception("Java not found at: " + jrePath.toString());
-			}
-		} else {
-			String javaPath = "";
-			if (System.getProperty("os.name").startsWith("Mac")) {
-				if (Files.exists(jrePath.resolve("Commands").resolve("java"))) {
-					javaPath = jrePath.resolve("Commands").resolve("java").toString();
-				}
-			}
-			if (javaPath.isEmpty()) {
-				if (Files.exists(jrePath.resolve("bin").resolve("java"))) {
-					args.add(jrePath.resolve("bin").resolve("java").toString());
-				} else {
-					throw new Exception("Java not found at: " + jrePath.toString());
-				}
-			} else {
-				args.add(javaPath);
-			}
-		}
+		args.add(javaPath.toString());
 		if (System.getProperty("os.name").startsWith("Mac")) {
 			args.add("-Xdock:icon=" + mcuPath.resolve("assets").resolve("icons").resolve("minecraft.icns").toString());
 			args.add("-Xdock:name=Minecraft(MCUpdater)");

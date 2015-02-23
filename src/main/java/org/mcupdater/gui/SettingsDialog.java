@@ -27,9 +27,6 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 
 	private final JButton btnApply;
 	private final JButton btnCancel;
-	private final JButton btnReload;
-	private final JButton btnSave;
-	private final JLabel lblStatus;
 	private final JTextField txtMinMemory;
 	private final JTextField txtMaxMemory;
 	private final JTextField txtPermGen;
@@ -80,15 +77,18 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 			GridBagConstraints gbcFillHeight = new GridBagConstraints();
 			gbcFillHeight.fill = GridBagConstraints.VERTICAL;
 			GridBagConstraints gbcNormal = new GridBagConstraints();
+			/*
 			lblStatus = new JLabel();
 			btnSave = new JButton("Save");
 			btnSave.setToolTipText("Apply and save settings");
 			btnReload = new JButton("Reload");
 			btnReload.setToolTipText("Reload settings");
-			btnApply = new JButton("Apply");
-			btnApply.setToolTipText("Apply settings for this session");
+			*/
+			btnApply = new JButton("OK");
+			btnApply.setToolTipText("Save changes");
 			btnCancel = new JButton("Cancel");
 			btnCancel.setToolTipText("Cancel unapplied changes");
+			/*
 			pnlActions.add(new JLabel("Save status: "), gbcNormal);
 			pnlActions.add(lblStatus, gbcFillWidth);
 			pnlActions.add(btnSave, gbcNormal);
@@ -96,6 +96,8 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 			JSeparator sep = new JSeparator(SwingConstants.VERTICAL);
 			sep.setPreferredSize(new Dimension(5, 1));
 			pnlActions.add(sep, gbcFillHeight);
+			*/
+			pnlActions.add(new JPanel(), gbcFillWidth);
 			pnlActions.add(btnApply, gbcNormal);
 			pnlActions.add(btnCancel, gbcNormal);
 			pnlActions.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.BLACK));
@@ -370,19 +372,6 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 	}
 
 	private void initLogic() {
-		btnSave.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				btnApply.doClick();
-				SettingsManager.getInstance().saveSettings();
-			}
-		});
-		btnReload.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				SettingsManager.getInstance().reload();
-			}
-		});
 		btnApply.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -408,6 +397,8 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 
 				manager.setDirty();
 				manager.fireSettingsUpdate();
+				SettingsManager.getInstance().saveSettings();
+				self.dispose();
 			}
 		});
 		btnCancel.addActionListener(new ActionListener() {
@@ -581,12 +572,10 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		profileModel.clearAndSet(current.getProfiles());
 		List<String> packURLs = current.getPackURLs();
 		lstPacks.setListData(packURLs.toArray(new String[packURLs.size()]));
-		lblStatus.setText(SettingsManager.getInstance().isDirty() ? "Not Saved" : "Saved");
 	}
 
 	@Override
 	public void stateChanged(boolean newState) {
-		lblStatus.setText(newState ? "Not Saved" : "Saved");
 	}
 
 	@Override
