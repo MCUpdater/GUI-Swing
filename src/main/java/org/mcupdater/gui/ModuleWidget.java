@@ -15,6 +15,7 @@ public class ModuleWidget extends JPanel {
 	private Module entry;
 	private boolean selected;
 	private List<ModuleWidget> dependents = new ArrayList<>();
+	private String description;
 
 	public ModuleWidget(Module module, Boolean overrideDefault, Boolean overrideValue) {
 		this.setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
@@ -39,7 +40,8 @@ public class ModuleWidget extends JPanel {
 				}
 			});
 			if (this.entry.getMeta().containsKey("description")) {
-				chkModule.setToolTipText(splitMulti(this.entry.getMeta().get("description")));
+				description = this.entry.getMeta().get("description");
+				updateToolTip(chkModule);
 			}
 			if (entry.getRequired() || entry.getIsDefault()) {
 				chkModule.setSelected(true);
@@ -52,6 +54,7 @@ public class ModuleWidget extends JPanel {
 			JLabel reqMod = new JLabel(this.entry.getName());
 			this.add(reqMod);
 			if (this.entry.getMeta().containsKey("description")) {
+				updateToolTip(reqMod);
 				reqMod.setToolTipText(splitMulti(this.entry.getMeta().get("description")));
 			}
 			this.selected = true;
@@ -65,6 +68,10 @@ public class ModuleWidget extends JPanel {
 				}
 			}
 		}
+	}
+
+	private void updateToolTip(JComponent target) {
+		target.setToolTipText(splitMulti(this.entry.getMeta().get("description")));
 	}
 
 	public void checkDependents() {

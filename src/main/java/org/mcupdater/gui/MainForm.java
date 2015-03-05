@@ -126,6 +126,9 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		settingsChanged(SettingsManager.getInstance().getSettings());
 		frameMain.setVisible(true);
 		baseLogger.info("Megathrusters are go!");
+		if (serverList.getModel().getSize() > 0 && serverList.getSelectedIndex() < 0) {
+			serverList.setSelectedIndex(0);
+		}
 		Thread daemonMonitor = new Thread() {
 			private ServerList currentSelection;
 			private int activeJobs = 0;
