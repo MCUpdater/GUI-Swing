@@ -327,10 +327,10 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 							if (response == JOptionPane.YES_OPTION) {
 								SettingsManager.getInstance().getSettings().addPackURL(newUrl);
 								SettingsManager.getInstance().fireSettingsUpdate();
-								if (!SettingsManager.getInstance().isDirty()) {
-									SettingsManager.getInstance().saveSettings();
-								}
 							}
+						}
+						if (!SettingsManager.getInstance().isDirty()) {
+							SettingsManager.getInstance().saveSettings();
 						}
 					} else {
 						log("Unable to get server information from " + newUrl);
