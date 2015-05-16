@@ -1,5 +1,6 @@
 package org.mcupdater.gui;
 
+import org.mcupdater.model.ModSide;
 import org.mcupdater.model.Module;
 
 import javax.swing.*;
@@ -19,6 +20,9 @@ public class ModulePanel extends JPanel {
 		modules = new HashMap<>();
 		this.setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
 		for (Module entry : modList) {
+            if (entry.getSide().equals(ModSide.SERVER)) {
+                continue;
+            }
 			ModuleWidget newEntry;
 			if (optionalMods.containsKey(entry.getId())) {
 				newEntry = new ModuleWidget(entry, true, optionalMods.get(entry.getId()));
