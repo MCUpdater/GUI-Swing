@@ -43,7 +43,7 @@ public class ModuleWidget extends JPanel {
 				description = this.entry.getMeta().get("description");
 				updateToolTip(chkModule);
 			}
-			if (entry.getRequired() || entry.getIsDefault()) {
+			if (entry.getRequired() || (this.entry.getIsDefault() && !overrideDefault.booleanValue())) {
 				chkModule.setSelected(true);
 			}
 			if (overrideDefault) {
