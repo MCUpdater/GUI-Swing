@@ -13,3 +13,8 @@ build/
 hs_err_pid*
 
 .DS_Store
+.idea/
+
+*.iml
+*.ipr
+*.iws
