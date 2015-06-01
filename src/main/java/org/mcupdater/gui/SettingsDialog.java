@@ -17,7 +17,12 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -32,7 +37,8 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 	private final JTextField txtPermGen;
 	private final JTextField txtJavaHome;
 	private final JButton btnJavaHomeBrowse;
-	private final JTextField txtJVMOpts;
+	private final JTextArea txtJVMDetails;
+	private final JTextArea txtJVMOpts;
 	private final JTextField txtWrapper;
 	private final JButton btnWrapperBrowse;
 	private final JCheckBox chkFullscreen;
@@ -55,6 +61,11 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 	private ProfileModel profileModel;
 	private SettingsDialog self;
 	private final MCUApp parent;
+
+	// for identifying which version of java we're running
+	private String jvmPathOld;
+	private String jvmVersion;
+	private Integer jvmBitDepth;
 
 	public SettingsDialog(MCUApp parent) {
 		this.parent = parent;
@@ -114,6 +125,9 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 					GroupLayout.Group colLabel = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
 					GroupLayout.Group colContent = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
 
+					// component for styling JTextAreas as necessary
+					final JTextField txtTemplate;
+
 					GroupLayout.Group rowMinMemory = layout.createParallelGroup(GroupLayout.Alignment.CENTER);
 					JLabel lblMinMemory = new JLabel("Minimum Memory: ");
 					txtMinMemory = new JTextField();
@@ -123,6 +137,8 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 					colLabel.addComponent(lblMinMemory);
 					colContent.addComponent(txtMinMemory);
 					rowMinMemory.addComponent(lblMinMemory).addComponent(txtMinMemory);
+
+					txtTemplate = txtMinMemory;	// copy the the first text field we init
 
 					GroupLayout.Group rowMaxMemory = layout.createParallelGroup(GroupLayout.Alignment.CENTER);
 					JLabel lblMaxMemory = new JLabel("Maximum Memory: ");
@@ -142,23 +158,32 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 					colContent.addComponent(txtPermGen);
 					rowPermGen.addComponent(lblPermGen).addComponent(txtPermGen);
 
-					GroupLayout.Group rowJavaHome = layout.createParallelGroup(GroupLayout.Alignment.CENTER);
+					GroupLayout.Group rowJavaHome = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
 					JLabel lblJavaHome = new JLabel("Java Home Path: ");
 					JPanel pnlJavaHome = new JPanel(new BorderLayout());
 					txtJavaHome = new JTextField();
 					pnlJavaHome.setMaximumSize(sizeGuide);
-					lblPermGen.setLabelFor(txtJavaHome);
+					lblJavaHome.setLabelFor(txtJavaHome);
+					txtJVMDetails = new JTextArea();
+					txtJVMDetails.setEditable(false);
+					txtJVMDetails.setVisible(false);
 					btnJavaHomeBrowse = new JButton(new ImageIcon(this.getClass().getResource("folder_explore.png")));
 					pnlJavaHome.add(txtJavaHome, BorderLayout.CENTER);
 					pnlJavaHome.add(btnJavaHomeBrowse, BorderLayout.EAST);
+					pnlJavaHome.add(txtJVMDetails, BorderLayout.SOUTH);
 					colLabel.addComponent(lblJavaHome);
 					colContent.addComponent(pnlJavaHome);
 					rowJavaHome.addComponent(lblJavaHome).addComponent(pnlJavaHome);
 
-					GroupLayout.Group rowJVMOpts = layout.createParallelGroup(GroupLayout.Alignment.CENTER);
+					GroupLayout.Group rowJVMOpts = layout.createParallelGroup(GroupLayout.Alignment.LEADING);
 					JLabel lblJVMOpts = new JLabel("JVMOpts: ");
-					txtJVMOpts = new JTextField();
+					txtJVMOpts = new JTextArea();
 					txtJVMOpts.setMaximumSize(sizeGuide);
+					txtJVMOpts.setLineWrap(true);
+					if( txtTemplate != null ) {
+						txtJVMOpts.setBorder(txtTemplate.getBorder());
+						txtJVMOpts.setMargin(txtTemplate.getInsets());
+					}
 					lblJVMOpts.setLabelFor(txtJVMOpts);
 					colLabel.addComponent(lblJVMOpts);
 					colContent.addComponent(txtJVMOpts);
@@ -418,6 +443,7 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 				if (choice == JFileChooser.APPROVE_OPTION) {
 					try {
 						txtJavaHome.setText(jfcJRE.getSelectedFile().getCanonicalPath());
+						validateJVM();
 					} catch (IOException e1) {
 						MainForm.getInstance().baseLogger.log(Level.SEVERE, "Error occurred while getting JRE path!", e1);
 					}
@@ -572,6 +598,58 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		profileModel.clearAndSet(current.getProfiles());
 		List<String> packURLs = current.getPackURLs();
 		lstPacks.setListData(packURLs.toArray(new String[packURLs.size()]));
+
+		validateJVM();
+	}
+
+	private void validateJVM() {
+		final Settings current = SettingsManager.getInstance().getSettings();
+		final String jrePath = current.getJrePath();
+		if( jrePath.equals(jvmPathOld) ) return;
+		jvmPathOld = jrePath;
+
+		txtJVMDetails.setText("");
+
+		Path binDir = new File(jrePath).toPath().resolve("bin");
+		if(!Files.exists(binDir)) {
+			txtJVMDetails.setText("!! Unable to find bin dir under specified JRE path !!");
+		} else {
+			Path javaPath = binDir.resolve("java.exe");
+			if( !Files.exists(javaPath) )
+				javaPath = binDir.resolve("java");
+			if( !Files.exists(javaPath) ) {
+				txtJVMDetails.setText("!! Unable to find java executable in bin dir !!");
+			} else {
+				// actually try to validate jvm
+				txtJVMDetails.setText("(validating java ...)");
+
+				final ProcessBuilder pb = new ProcessBuilder();
+				pb.command(javaPath.toString(), "-version");
+				pb.redirectErrorStream(true);
+				try {
+					final Process proc = pb.start();
+					final InputStreamReader isr = new InputStreamReader(proc.getInputStream());
+					final BufferedReader br = new BufferedReader(isr);
+
+					StringBuilder buf = new StringBuilder();
+					String line;
+					while( (line = br.readLine()) != null ) {
+						if( buf.length() > 0 )
+							buf.append('\n');
+						buf.append(line);
+					}
+
+					proc.waitFor();
+					txtJVMDetails.setText(buf.toString());
+				} catch( IOException ioe ) {
+					txtJVMDetails.setText(ioe.getMessage());
+				} catch( InterruptedException inte ) {
+					txtJVMDetails.setText(inte.getMessage());
+				}
+			}
+		}
+
+		txtJVMDetails.setVisible(!txtJVMDetails.getText().isEmpty());
 	}
 
 	@Override
