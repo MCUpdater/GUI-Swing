@@ -779,7 +779,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 							docEle = (Element) servers.item(i);
 							ServerList sl = ServerList.fromElement(mcuVersion, serverUrl, docEle);
 							if (!sl.isFakeServer()) {
-								ServerList newEntry = ServerPackParser.parseDocument(serverHeader,sl.getServerId(),new HashMap<String,Module>(),sl.getServerId());
+								ServerList newEntry = ServerPackParser.parseDocument(serverHeader,sl.getServerId(),new HashMap<String,Module>(), sl.getServerId());
 								Instance instData = new Instance();
 								AtomicReference<Instance> ref = new AtomicReference<>(instData);
 								newEntry.setState(getPackState(newEntry, ref));
