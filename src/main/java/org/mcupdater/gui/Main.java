@@ -38,8 +38,6 @@ public class Main {
 		setDefaultPackURL(options.valueOf(packSpec));
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
-				SettingsManager.getInstance().loadSettings();
-				MCUpdater.getInstance().setInstanceRoot(new File(SettingsManager.getInstance().getSettings().getInstanceRoot()).toPath());
 				try {
 					UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 					/*

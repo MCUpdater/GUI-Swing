@@ -88,8 +88,6 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 
 	public MainForm() {
 		self = this;
-		this.setAuthManager(new YggdrasilAuthManager());
-		SettingsManager.getInstance().addListener(this);
 		this.baseLogger = Logger.getLogger("MCUpdater");
 		baseLogger.setLevel(Level.ALL);
 		FileHandler mcuHandler;
@@ -104,10 +102,14 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		Version.setApp(this);
 		MCUpdater.getInstance().setParent(this);
 		instance = this;
+		SettingsManager.getInstance().addListener(this);
 		baseLogger.info("Activate interlocks!");
+		//SettingsManager.getInstance().loadSettings();
+		MCUpdater.getInstance().setInstanceRoot(new File(SettingsManager.getInstance().getSettings().getInstanceRoot()).toPath());
 		newsBrowser = BrowserProxy.createProxy();
 		initGui();
 		baseLogger.info("Dynatherms connected!");
+		this.setAuthManager(new YggdrasilAuthManager());
 		bindLogic();
 		baseLogger.info("Infracells up!");
 		if (!SettingsManager.getInstance().getSettings().getPackURLs().contains(Main.getDefaultPackURL())) {
@@ -916,6 +918,12 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 	public DownloadQueue submitAssetsQueue(String queueName, String parent, MinecraftVersion version) {
 		progressView.addProgressBar(queueName, parent);
 		return AssetManager.downloadAssets(queueName, parent, MCUpdater.getInstance().getArchiveFolder().resolve("assets").toFile(), this, version);
+	}
+
+	@Override
+	public void alert(String msg) {
+		baseLogger.warning(msg);
+		JOptionPane.showMessageDialog(null, msg, "MCUpdater", JOptionPane.WARNING_MESSAGE );
 	}
 
 	@Override

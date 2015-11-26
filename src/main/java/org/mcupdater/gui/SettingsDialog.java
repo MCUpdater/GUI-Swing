@@ -443,7 +443,7 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 				if (choice == JFileChooser.APPROVE_OPTION) {
 					try {
 						txtJavaHome.setText(jfcJRE.getSelectedFile().getCanonicalPath());
-						validateJVM();
+						validateJVM(txtJavaHome.getText());
 					} catch (IOException e1) {
 						MainForm.getInstance().baseLogger.log(Level.SEVERE, "Error occurred while getting JRE path!", e1);
 					}
@@ -603,8 +603,10 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 	}
 
 	private void validateJVM() {
-		final Settings current = SettingsManager.getInstance().getSettings();
-		final String jrePath = current.getJrePath();
+		validateJVM(SettingsManager.getInstance().getSettings().getJrePath());
+	}
+
+	private void validateJVM(final String jrePath) {
 		if( jrePath.equals(jvmPathOld) ) return;
 		jvmPathOld = jrePath;
 
