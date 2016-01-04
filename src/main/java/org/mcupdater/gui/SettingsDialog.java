@@ -58,6 +58,7 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 	private final JTextField txtInstanceRoot;
 	private final JButton btnInstanceRootBrowse;
 	private final JList<Profile> lstProfiles;
+	private final JCheckBox chkProMode;
 	private ProfileModel profileModel;
 	private SettingsDialog self;
 	private final MCUApp parent;
@@ -361,6 +362,16 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 					colContent.addComponent(pnlPacks);
 					rowPacks.addComponent(lblPacks).addComponent(pnlPacks);
 
+					GroupLayout.Group rowProMode = layout.createParallelGroup(GroupLayout.Alignment.CENTER);
+					chkProMode = new JCheckBox();
+					chkProMode.setToolTipText("Makes all mods optional for testing purposes.");
+					chkProMode.setMaximumSize(sizeGuide);
+					JLabel lblProMode = new JLabel("Professional Mode: ");
+					lblProMode.setLabelFor(chkProMode);
+					colLabel.addComponent(lblProMode);
+					colContent.addComponent(chkProMode);
+					rowProMode.addComponent(lblProMode).addComponent(chkProMode);
+
 					btnClearCache = new JButton("Clear all cache");
 					btnClearStale = new JButton("Clear stale cache");
 					btnResetSettings = new JButton("Reset settings");
@@ -381,6 +392,7 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 									.addGroup(rowInstanceRoot)
 									.addGroup(rowProfiles)
 									.addGroup(rowPacks)
+									.addGroup(rowProMode)
 									.addComponent(btnClearCache)
 									.addComponent(btnClearStale)
 									.addComponent(btnResetSettings)
@@ -419,6 +431,7 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 
 				//MCUpdater tab
 				manager.getSettings().setInstanceRoot(txtInstanceRoot.getText());
+				manager.getSettings().setProfessionalMode(chkProMode.isSelected());
 
 				manager.setDirty();
 				manager.fireSettingsUpdate();
@@ -598,7 +611,7 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		profileModel.clearAndSet(current.getProfiles());
 		List<String> packURLs = current.getPackURLs();
 		lstPacks.setListData(packURLs.toArray(new String[packURLs.size()]));
-
+		chkProMode.setSelected(current.isProfessionalMode());
 		validateJVM();
 	}
 

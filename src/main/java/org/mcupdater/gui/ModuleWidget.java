@@ -2,6 +2,7 @@ package org.mcupdater.gui;
 
 import org.mcupdater.model.GenericModule;
 import org.mcupdater.model.Module;
+import org.mcupdater.settings.SettingsManager;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -20,7 +21,7 @@ public class ModuleWidget extends JPanel {
 	public ModuleWidget(Module module, Boolean overrideDefault, Boolean overrideValue) {
 		this.setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
 		this.entry = module;
-		if (!entry.getRequired()) {
+		if (!entry.getRequired() || SettingsManager.getInstance().getSettings().isProfessionalMode()) {
 			final JCheckBox chkModule = new JCheckBox(this.entry.getName());
 			chkModule.addChangeListener(new ChangeListener() {
 				@Override
