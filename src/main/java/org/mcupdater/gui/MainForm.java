@@ -40,10 +40,11 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.text.Style;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.ClipboardOwner;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.Transferable;
+import java.awt.event.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -60,7 +61,7 @@ import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class MainForm extends MCUApp implements SettingsListener, TrackerListener {
+public class MainForm extends MCUApp implements SettingsListener, TrackerListener, ClipboardOwner {
 	private static MainForm instance;
 	private final MainForm self;
 	private JFrame frameMain;
@@ -231,6 +232,14 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 			serverList.setModel(slModel);
 			serverList.setCellRenderer(new ServerListCellRenderer());
 			serverList.addListSelectionListener(new InstanceListener());
+			serverList.addMouseListener(new MouseAdapter() {
+				@Override
+				public void mousePressed(MouseEvent e) {
+					if (SwingUtilities.isRightMouseButton(e)) {
+						showInstanceMenu(serverList.getModel().getElementAt(serverList.locationToIndex(e.getPoint())), e.getX(), e.getY());
+					}
+				}
+			});
 
 			JScrollPane instanceScroller = new JScrollPane(serverList);
 			panelLeft.add(instanceScroller, BorderLayout.CENTER);
@@ -309,6 +318,33 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		}
 		frameMain.getContentPane().add(contentPanel, BorderLayout.CENTER);
 
+	}
+
+	private void showInstanceMenu(final ServerList context, int x, int y) {
+		JPopupMenu mnuInstance = new JPopupMenu();
+		JMenuItem openFolder = new JMenuItem("Open instance folder");
+		openFolder.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				try {
+					Desktop.getDesktop().open(MCUpdater.getInstance().getInstanceRoot().resolve(context.getServerId()).toFile());
+				} catch (IOException ex) {
+					baseLogger.log(Level.SEVERE, "An error occurred:", ex);
+				}
+			}
+		});
+		JMenuItem copyLink = new JMenuItem("Copy pack URL");
+		copyLink.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				StringSelection clipboardContents = new StringSelection(context.getPackUrl());
+				Clipboard clip = Toolkit.getDefaultToolkit().getSystemClipboard();
+				clip.setContents(clipboardContents, instance);
+			}
+		});
+		mnuInstance.add(openFolder);
+		mnuInstance.add(copyLink);
+		mnuInstance.show(serverList, x, y);
 	}
 
 	private void bindLogic() {
@@ -782,6 +818,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 							ServerList sl = ServerList.fromElement(mcuVersion, serverUrl, docEle);
 							if (!sl.isFakeServer()) {
 								ServerList newEntry = ServerPackParser.parseDocument(serverHeader,sl.getServerId(),new HashMap<String,Module>(), sl.getServerId());
+								newEntry.setPackUrl(serverUrl);
 								Instance instData = new Instance();
 								AtomicReference<Instance> ref = new AtomicReference<>(instData);
 								newEntry.setState(getPackState(newEntry, ref));
@@ -974,6 +1011,11 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 
 	public boolean isPlaying() {
 		return playing;
+	}
+
+	@Override
+	public void lostOwnership(Clipboard clipboard, Transferable contents) {
+		// Do nothing
 	}
 
 	private final class InstanceListener implements ListSelectionListener {
