@@ -1,6 +1,7 @@
 package org.mcupdater.gui;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -111,9 +112,11 @@ public class ProgressView extends JPanel {
 			this.setLayout(new BorderLayout());
 			lblName = new JLabel(parentId + " - " + jobName);
 			lblName.setVerticalTextPosition(JLabel.CENTER);
+			lblName.setBorder(new EmptyBorder(5, 5, 5, 5));
 			pbProgress = new JProgressBar(0,10000);
 			lblStatus = new JLabel("Inactive");
 			lblStatus.setVerticalTextPosition(JLabel.CENTER);
+			lblStatus.setBorder(new EmptyBorder(5, 5, 5, 5));
 			btnDismiss = new JButton(new ImageIcon(this.getClass().getResource("remove.png")));
 			btnDismiss.addActionListener(new ActionListener(){
 				@Override
@@ -128,6 +131,7 @@ public class ProgressView extends JPanel {
 				}
 			});
 			btnDismiss.setEnabled(false);
+			btnDismiss.setBorder(new EmptyBorder(5, 5, 5, 5));
 			JPanel pnlStatus = new JPanel();
 			pnlStatus.setLayout(new BoxLayout(pnlStatus, BoxLayout.LINE_AXIS));
 			pnlStatus.add(lblStatus);
