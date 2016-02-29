@@ -4,7 +4,6 @@ import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.NonOptionArgumentSpec;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-import org.mcupdater.settings.SettingsManager;
 import org.mcupdater.util.MCUpdater;
 
 import javax.swing.*;

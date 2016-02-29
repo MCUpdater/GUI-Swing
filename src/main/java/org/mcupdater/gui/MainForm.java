@@ -634,6 +634,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		fields.put("resource_packs", mcu.getInstanceRoot().resolve(selected.getServerId()).resolve("resourcepacks").toString());
 		fields.put("user_properties", "{}"); //TODO: This will likely actually get used at some point.
 		fields.put("user_type", (user.isLegacy() ? UserType.LEGACY.toString() : UserType.MOJANG.toString()));
+		fields.put("version_type", mcVersion.getType());
 		String[] fieldArr = tmpclArgs.split(" ");
 		for (int i = 0; i < fieldArr.length; i++) {
 			fieldArr[i] = fieldReplacer.replace(fieldArr[i]);
