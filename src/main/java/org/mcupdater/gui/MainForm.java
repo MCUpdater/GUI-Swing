@@ -864,6 +864,20 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		} catch (Exception e) {
 			baseLogger.warning("Unable to sort mod list!");
 		}
+		Set<String> modIds = new HashSet<>();
+		for (Module mod : modList) {
+			modIds.add(mod.getId());
+		}
+		for (Module mod : new ArrayList<>(modList)) {
+			if (!mod.getDepends().isEmpty()) {
+				for (String modid : mod.getDepends().split(" ")) {
+					if (!modIds.contains(modid)) {
+						MainForm.getInstance().baseLogger.log(Level.WARNING, mod.getName() + ": " + modid + " does not exist in the mod list for dependency and will be removed from the pack.");
+						modList.remove(mod);
+					}
+				}
+			}
+		}
 		modPanel.reload(modList, instData.getOptionalMods());
 
 		frameMain.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));

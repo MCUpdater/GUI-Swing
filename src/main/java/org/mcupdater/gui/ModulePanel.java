@@ -36,7 +36,7 @@ public class ModulePanel extends JPanel {
 			if (!entry.getValue().getModule().getDepends().isEmpty()){
 				for (String modid : entry.getValue().getModule().getDepends().split(" ")) {
 					if (modules.get(modid) == null) {
-						MainForm.getInstance().baseLogger.log(Level.WARNING, entry.getValue().getModule().getName() + ": " + modid + " does not exist in the mod list for dependency.");
+						MainForm.getInstance().baseLogger.log(Level.WARNING, entry.getValue().getModule().getName() + ": " + modid + " does not exist in the mod list for dependency and will be removed from the pack.");
 					} else {
 						modules.get(modid).addDependent(entry.getValue());
 					}
