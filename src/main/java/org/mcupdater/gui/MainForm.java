@@ -307,7 +307,9 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 				JLabel lblProfiles = new JLabel("Profile:");
 				cboProfiles = new JComboBox<>(profileModel);
 				btnUpdate = new JButton("Update");
+				btnUpdate.setIcon(new ImageIcon(this.getClass().getResource("update.png")));
 				btnLaunch = new JButton("Launch Minecraft");
+				btnLaunch.setIcon(new ImageIcon(this.getClass().getResource("play.png")));
 
 				panelActions.add(lblProfiles);
 				panelActions.add(cboProfiles);
