@@ -19,6 +19,7 @@ public class ConsoleArea extends JTextPane {
 		StyleConstants.setForeground(warnStyle, new Color(0xaaaa00));
 		StyleConstants.setForeground(errorStyle, Color.red);
 		this.setEditable(false);
+		this.getDocument().addDocumentListener(new LimitLinesDocumentListener(200));
 	}
 
 	public void log(String msg) {
