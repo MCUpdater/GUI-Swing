@@ -45,6 +45,11 @@ public class ConsoleArea extends JTextPane {
 								e.printStackTrace();
 							}
 						}
+						try {
+							sleep(100);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
 					}
 				}
 			}
