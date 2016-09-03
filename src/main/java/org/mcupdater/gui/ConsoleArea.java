@@ -1,17 +1,16 @@
 package org.mcupdater.gui;
 
 import javax.swing.*;
-import javax.swing.text.BadLocationException;
-import javax.swing.text.Style;
-import javax.swing.text.StyleConstants;
-import javax.swing.text.StyledDocument;
+import javax.swing.text.*;
 import java.awt.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ConsoleArea extends JTextPane {
 	private final StyledDocument doc = this.getStyledDocument();
 	public final Style infoStyle = doc.addStyle("Info", null);
 	public final Style warnStyle = doc.addStyle("Warning", null);
 	public final Style errorStyle = doc.addStyle("Error", null);
+	private final ConcurrentLinkedQueue<Entry> logQueue = new ConcurrentLinkedQueue<>();
 
 	public ConsoleArea() {
 		this.setBackground(Color.white);
@@ -19,29 +18,61 @@ public class ConsoleArea extends JTextPane {
 		StyleConstants.setForeground(warnStyle, new Color(0xaaaa00));
 		StyleConstants.setForeground(errorStyle, Color.red);
 		this.setEditable(false);
-		this.getDocument().addDocumentListener(new LimitLinesDocumentListener(200));
+		//this.getDocument().addDocumentListener(new LimitLinesDocumentListener(200));
+		this.startQueue();
+	}
+
+	private void startQueue() {
+		Thread queueDaemon = new Thread() {
+			@SuppressWarnings("InfiniteLoopStatement")
+			@Override
+			public void run() {
+				while (true) {
+					Entry current = logQueue.poll();
+					if (current != null) {
+						try {
+							doc.insertString(doc.getLength(), current.msg, current.style);
+							setCaretPosition(doc.getLength());
+						} catch (BadLocationException e) {
+							e.printStackTrace();
+						}
+					} else {
+						while (doc.getDefaultRootElement().getElementCount() > 200) {
+							Element line = doc.getDefaultRootElement().getElement(0);
+							try {
+								doc.remove(0,line.getEndOffset());
+							} catch (BadLocationException e) {
+								e.printStackTrace();
+							}
+						}
+					}
+				}
+			}
+		};
+		queueDaemon.setDaemon(true);
+		queueDaemon.start();
 	}
 
 	public void log(String msg) {
-		try {
-			doc.insertString(doc.getLength(), msg, null);
-			setCaretPosition(doc.getLength());
-		} catch (BadLocationException e) {
-			e.printStackTrace();
-		}
+		log(msg, null);
 	}
 
 	public void log(String msg, Style a) {
-		try {
-			doc.insertString(doc.getLength(), msg, a);
-			setCaretPosition(doc.getLength());
-		} catch (BadLocationException e) {
-			e.printStackTrace();
-		}
+		logQueue.add(new Entry(msg, a));
 	}
 
 	@Override
 	public boolean getScrollableTracksViewportWidth() {
 		return getUI().getPreferredSize(this).width <= getParent().getSize().width;
+	}
+
+	private class Entry {
+		public String msg;
+		public Style style;
+
+		Entry(String msg, Style style) {
+			this.msg = msg;
+			this.style = style;
+		}
 	}
 }
