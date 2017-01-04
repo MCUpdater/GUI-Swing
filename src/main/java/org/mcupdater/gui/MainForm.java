@@ -721,12 +721,14 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 			args.add("-Xdock:icon=" + mcuPath.resolve("assets").resolve("icons").resolve("minecraft.icns").toString());
 			args.add("-Xdock:name=Minecraft(MCUpdater)");
 		}
-		args.addAll(Arrays.asList(settings.getJvmOpts().split(" ")));
+		if (!settings.getJvmOpts().isEmpty()) {
+			args.addAll(Arrays.asList(settings.getJvmOpts().split(" ")));
+		}
 		args.add("-Xms" + settings.getMinMemory());
 		args.add("-Xmx" + settings.getMaxMemory());
 		args.add("-XX:PermSize=" + settings.getPermGen());
 		args.add("-classpath");
-		args.add(mcuPath.resolve("lib").resolve("MCU-Launcher.jar").toString() + System.getProperty("path.separator") + instancePath.resolve("lib").resolve("*"));
+		args.add(mcuPath.resolve("lib").resolve("MCU-Launcher.jar").toString() + System.getProperty("path.separator") + instancePath.resolve("lib").toString() + File.separator + "*");
 		args.add("org.mcupdater.MinecraftFrame");
 		args.add(playerName);
 		args.add(sessionKey);
