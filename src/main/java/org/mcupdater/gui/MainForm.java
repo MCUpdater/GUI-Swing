@@ -60,6 +60,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MainForm extends MCUApp implements SettingsListener, TrackerListener, ClipboardOwner {
 	private static MainForm instance;
@@ -187,6 +189,8 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		};
 		daemonMonitor.setDaemon(true);
 		daemonMonitor.start();
+		JavaDetails details = getJavaVersion();
+		baseLogger.info("Java: " + details.getVersion() + " (" + details.getBitDepth() + "-Bit)");
 	}
 
 	// Section - GUI elements
@@ -820,7 +824,8 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 						NodeList servers = parent.getElementsByTagName("Server");
 						for (int i = 0; i < servers.getLength(); i++) {
 							docEle = (Element) servers.item(i);
-							ServerList sl = ServerList.fromElement(mcuVersion, serverUrl, docEle);
+							ServerList sl = new ServerList();
+							ServerList.fromElement(mcuVersion, serverUrl, docEle, sl);
 							if (!sl.isFakeServer()) {
 								ServerList newEntry = ServerPackParser.parseDocument(serverHeader,sl.getServerId(),new HashMap<String,Module>(), sl.getServerId(), sl.getVersion());
 								newEntry.setPackUrl(serverUrl);
@@ -831,7 +836,8 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 							}
 						}
 					} else {
-						ServerList sl = ServerList.fromElement("1.0", serverUrl, parent);
+						ServerList sl = new ServerList();
+						ServerList.fromElement("1.0", serverUrl, parent, sl);
 						Instance instData = new Instance();
 						AtomicReference<Instance> ref = new AtomicReference<>(instData);
 						sl.setState(getPackState(sl, ref));
@@ -910,7 +916,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		} catch (IOException e) {
 			baseLogger.log(Level.WARNING, "instance.json file not found.  This is not an error if the instance has not been installed.");
 		}
-		boolean needUpdate = (instData.getHash().isEmpty() || !instData.getHash().equals(remoteHash));
+		boolean needUpdate = (instData.getHash().isEmpty() || !instData.getHash().equals(remoteHash) || !instData.getMCVersion().equals(entry.getVersion()));
 		boolean needNewMCU = Version.isVersionOld(entry.getMCUVersion());
 		if (needUpdate) { return ServerList.State.UPDATE; }
 		if (needNewMCU) { return ServerList.State.ERROR; }
@@ -1063,6 +1069,69 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 					async.run();
 				}
 			}
+		}
+	}
+
+	private JavaDetails getJavaVersion() {
+		String jrePath = SettingsManager.getInstance().getSettings().getJrePath();
+		Path binDir = new File(jrePath).toPath().resolve("bin");
+		if(!Files.exists(binDir)) {
+			baseLogger.warning("!! Unable to find bin dir under specified JRE path !!");
+		} else {
+			Path javaPath = binDir.resolve("java.exe");
+			if (!Files.exists(javaPath))
+				javaPath = binDir.resolve("java");
+			if (!Files.exists(javaPath)) {
+				baseLogger.warning("!! Unable to find java executable in bin dir !!");
+			} else {
+				final ProcessBuilder pb = new ProcessBuilder();
+				pb.command(javaPath.toString(), "-version");
+				pb.redirectErrorStream(true);
+				try {
+					final Process proc = pb.start();
+					final InputStreamReader isr = new InputStreamReader(proc.getInputStream());
+					final BufferedReader br = new BufferedReader(isr);
+
+					StringBuilder buf = new StringBuilder();
+					String line;
+					while ((line = br.readLine()) != null) {
+						buf.append(line);
+					}
+
+					proc.waitFor();
+					String result = buf.toString();
+					Pattern versionPattern = Pattern.compile("\\d+.\\d+"); // .\\d+.\\d+-\\d+");
+					Matcher versionMatcher = versionPattern.matcher(result);
+					versionMatcher.find();
+					Pattern bitPattern = Pattern.compile("\\d+-Bit");
+					Matcher bitMatcher = bitPattern.matcher(result);
+					bitMatcher.find();
+					return new JavaDetails(versionMatcher.group(), Integer.valueOf(bitMatcher.group().replace("-Bit", "")));
+				} catch (IOException ioe) {
+					baseLogger.log(Level.SEVERE, "IO Exception occurred", ioe);
+				} catch (InterruptedException inte) {
+					baseLogger.log(Level.SEVERE, "Interrupted Exception occurred", inte);
+				}
+			}
+		}
+		return null;
+	}
+
+	private class JavaDetails {
+		private String version;
+		private int bitDepth;
+
+		private JavaDetails(String version, int bitDepth) {
+			this.version = version;
+			this.bitDepth = bitDepth;
+		}
+
+		public String getVersion() {
+			return version;
+		}
+
+		public int getBitDepth() {
+			return bitDepth;
 		}
 	}
 }

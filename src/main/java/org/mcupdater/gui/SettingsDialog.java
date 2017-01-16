@@ -562,13 +562,15 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 								NodeList servers = parent.getElementsByTagName("Server");
 								for (int i = 0; i < servers.getLength(); i++) {
 									docEle = (Element) servers.item(i);
-									ServerList sl = ServerList.fromElement(mcuVersion, serverUrl, docEle);
+									ServerList sl = new ServerList();
+									ServerList.fromElement(mcuVersion, serverUrl, docEle, sl);
 									if (!sl.isFakeServer()) {
 										digests.addAll(sl.getDigests());
 									}
 								}
 							} else {
-								ServerList sl = ServerList.fromElement("1.0", serverUrl, parent);
+								ServerList sl = new ServerList();
+								ServerList.fromElement("1.0", serverUrl, parent, sl);
 								digests.addAll(sl.getDigests());
 							}
 						}
