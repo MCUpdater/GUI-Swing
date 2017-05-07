@@ -412,6 +412,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 						reader.close();
 					} catch (IOException ioe) {
 						instData = new Instance();
+						instData.setMCVersion(selected.getVersion());
 					}
 					Set<String> digests = new HashSet<>();
 					List<Module> fullModList = new ArrayList<>(selected.getModules().values());
