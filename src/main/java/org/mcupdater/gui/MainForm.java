@@ -572,7 +572,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 			args.add("-Xdock:icon=" + mcu.getArchiveFolder().resolve("assets").resolve("icons").resolve("minecraft.icns").toString());
 			args.add("-Xdock:name=Minecraft(MCUpdater)");
 		}
-		args.add("-Djava.library.path=" + mcu.getInstanceRoot().resolve(selected.getServerId()).resolve("lib").resolve("natives").toString());
+		args.add("-Djava.library.path=" + mcu.getInstanceRoot().resolve(selected.getServerId()).resolve("libraries").resolve("natives").toString());
 		if (!selected.getMainClass().isEmpty()) {
 			mainClass = selected.getMainClass();
 		} else {
@@ -581,7 +581,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		for (ModuleWidget entry : modules) {
 			if (entry.isSelected()) {
 				if (entry.getModule().getModType().equals(ModType.Library)) {
-					libs.add(entry.getModule().getId() + ".jar");
+					libs.add(entry.getModule().getFilename());
 				}
 				if (!entry.getModule().getLaunchArgs().isEmpty()) {
 					clArgs.append(" ").append(entry.getModule().getLaunchArgs());
@@ -592,7 +592,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 				if (entry.getModule().hasSubmodules()) {
 					for (GenericModule sm : entry.getModule().getSubmodules()) {
 						if (sm.getModType().equals(ModType.Library)) {
-							libs.add(sm.getId() + ".jar");
+							libs.add(sm.getFilename());
 						}
 						if (!sm.getLaunchArgs().isEmpty()) {
 							clArgs.append(" ").append(sm.getLaunchArgs());
@@ -607,16 +607,16 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		for (Library lib : mcVersion.getLibraries()) {
 			String key = StringUtils.join(Arrays.copyOfRange(lib.getName().split(":"),0,2),":");
 			if (selected.getLibOverrides().containsKey(key)) {
-				lib.setName(selected.getLibOverrides().get(key));
+				lib.setName("libraries/" + selected.getLibOverrides().get(key));
 			}
 			if (lib.validForOS() && !lib.hasNatives()) {
-				libs.add(lib.getFilename());
+				libs.add("libraries/" + lib.getFilename());
 			}
 		}
 		args.add("-cp");
 		StringBuilder classpath = new StringBuilder();
 		for (String entry : libs) {
-			classpath.append(mcu.getInstanceRoot().resolve(selected.getServerId()).resolve("lib").resolve(entry).toString()).append(MCUpdater.cpDelimiter());
+			classpath.append(mcu.getInstanceRoot().resolve(selected.getServerId()).resolve(entry).toString()).append(MCUpdater.cpDelimiter());
 		}
 		classpath.append(mcu.getInstanceRoot().resolve(selected.getServerId()).resolve("bin").resolve("minecraft.jar").toString());
 		args.add(classpath.toString());
