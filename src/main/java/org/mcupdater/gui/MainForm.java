@@ -11,7 +11,6 @@ import org.jdesktop.swingx.JXLoginPane;
 import org.mcupdater.FMLStyleFormatter;
 import org.mcupdater.MCUApp;
 import org.mcupdater.api.Version;
-import org.mcupdater.auth.MinecraftLoginService;
 import org.mcupdater.auth.YggdrasilAuthManager;
 import org.mcupdater.downloadlib.DownloadQueue;
 import org.mcupdater.downloadlib.Downloadable;

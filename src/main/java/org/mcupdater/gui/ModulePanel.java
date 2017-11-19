@@ -1,5 +1,7 @@
 package org.mcupdater.gui;
 
+import org.mcupdater.gui.MainForm;
+import org.mcupdater.gui.ModuleWidget;
 import org.mcupdater.model.ModSide;
 import org.mcupdater.model.Module;
 

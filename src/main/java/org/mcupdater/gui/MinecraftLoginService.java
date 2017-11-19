@@ -1,11 +1,10 @@
-package org.mcupdater.auth;
+package org.mcupdater.gui;
 
 import com.mojang.authlib.exceptions.AuthenticationException;
 import com.mojang.authlib.yggdrasil.YggdrasilUserAuthentication;
 import org.jdesktop.swingx.JXLoginPane;
 import org.jdesktop.swingx.auth.LoginService;
-import org.mcupdater.AuthManager;
-import org.mcupdater.gui.MainForm;
+import org.mcupdater.auth.AuthManager;
 
 public class MinecraftLoginService extends LoginService {
 
