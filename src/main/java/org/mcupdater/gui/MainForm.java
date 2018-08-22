@@ -837,11 +837,11 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		frameMain.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 		this.selected = entry;
 		newsBrowser.navigate(entry.getNewsUrl());
+		int sourceTab = instanceTabs.indexOfTab("Source");
+		if (sourceTab != -1) {
+			instanceTabs.remove(sourceTab);
+		}
 		if (newsBrowser.isModern() && entry.hasStylesheet()) {
-			int sourceTab = instanceTabs.indexOfTab("Source");
-			if (sourceTab != -1) {
-				instanceTabs.remove(sourceTab);
-			}
 			BrowserProxy sourceBrowser = BrowserProxy.createProxy();
 			instanceTabs.addTab("Source", sourceBrowser.getBaseComponent());
 			sourceBrowser.navigate(entry.getPackUrl());

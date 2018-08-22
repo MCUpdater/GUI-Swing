@@ -17,29 +17,35 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Callback;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 public class JFXBrowser extends BrowserProxy {
 
-	public static WebEngine webEngine;
+	public static Map<UUID,WebEngine> webEngine = new HashMap<>();
+	private UUID instanceId;
 
 	public JFXBrowser() {
 		baseComponent = new JFXPanel();
+		instanceId = UUID.randomUUID();
 
 		Platform.runLater(new Runnable() { // this will run initFX as JavaFX-Thread
 			@Override
 			public void run() {
-				initFX((JFXPanel) baseComponent);
+				initFX((JFXPanel) baseComponent, instanceId);
 			}
 		});
 	}
 
-	private static void initFX(final JFXPanel fxPanel) {
+	private static void initFX(final JFXPanel fxPanel, UUID instanceId) {
 		ExtensibleRegion group = new ExtensibleRegion();
 		Scene scene = new Scene(group);
 		fxPanel.setScene(scene);
 		WebView webView = new WebView();
 		group.add(webView);
-		webEngine = webView.getEngine();
-		setPopupHandler(webEngine);
+		webEngine.put(instanceId, webView.getEngine());
+		setPopupHandler(webEngine.get(instanceId));
 	}
 
 	@Override
@@ -48,7 +54,7 @@ public class JFXBrowser extends BrowserProxy {
 
 			@Override
 			public void run() {
-				webEngine.load(navigateTo);
+				webEngine.get(instanceId).load(navigateTo);
 			}
 		});
 	}
