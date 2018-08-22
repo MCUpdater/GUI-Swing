@@ -17,16 +17,21 @@ public class ModuleWidget extends JPanel {
 	private boolean selected;
 	private List<ModuleWidget> dependents = new ArrayList<>();
 	private String description;
+	private boolean init;
 
 	public ModuleWidget(Module module, Boolean overrideDefault, Boolean overrideValue) {
 		this.setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
 		this.entry = module;
+		init = true;
 		if (!entry.getRequired() || SettingsManager.getInstance().getSettings().isProfessionalMode()) {
 			final JCheckBox chkModule = new JCheckBox(this.entry.getName());
 			chkModule.addChangeListener(new ChangeListener() {
 				@Override
 				public void stateChanged(ChangeEvent e) {
-					selected = chkModule.isSelected();
+					if (selected != chkModule.isSelected()) {
+						selected = chkModule.isSelected();
+						if (!init) MainForm.getInstance().setDirty();
+					}
 					for (String modid : entry.getDepends().split(" ")) {
 						for (ModuleWidget entry : MainForm.getInstance().modPanel.getModules()) {
 							if (entry.entry.getId().equals(modid)) {
@@ -55,8 +60,8 @@ public class ModuleWidget extends JPanel {
 			JLabel reqMod = new JLabel(this.entry.getName());
 			this.add(reqMod);
 			if (this.entry.getMeta().containsKey("description")) {
+				description = this.entry.getMeta().get("description");
 				updateToolTip(reqMod);
-				reqMod.setToolTipText(splitMulti(this.entry.getMeta().get("description")));
 			}
 			this.selected = true;
 		}
@@ -69,10 +74,11 @@ public class ModuleWidget extends JPanel {
 				}
 			}
 		}
+		init = false;
 	}
 
 	private void updateToolTip(JComponent target) {
-		target.setToolTipText(splitMulti(this.entry.getMeta().get("description")));
+		target.setToolTipText(splitMulti(description));
 	}
 
 	public void checkDependents() {

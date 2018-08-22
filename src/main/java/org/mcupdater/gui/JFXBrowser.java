@@ -53,6 +53,11 @@ public class JFXBrowser extends BrowserProxy {
 		});
 	}
 
+	@Override
+	public boolean isModern() {
+		return true;
+	}
+
 	private static class ExtensibleRegion extends Region {
 		@Override
 		protected void layoutChildren() {

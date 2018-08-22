@@ -58,4 +58,9 @@ public class SwingBrowser extends BrowserProxy {
 		async.setDaemon(true);
 		async.start();
 	}
+
+	@Override
+	public boolean isModern() {
+		return false;
+	}
 }

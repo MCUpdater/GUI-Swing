@@ -18,6 +18,8 @@ public abstract class BrowserProxy {
 
 	public abstract void navigate(String navigateTo);
 
+	public abstract boolean isModern();
+
 	public JComponent getBaseComponent() {
 		return baseComponent;
 	}

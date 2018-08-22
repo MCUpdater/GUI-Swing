@@ -87,6 +87,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 	private boolean playing;
 	private JTabbedPane instanceTabs;
 	private JScrollPane progressScroller;
+	private boolean dirty;
 
 	public MainForm() {
 		self = this;
@@ -814,40 +815,14 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		urls.addAll(current.getPackURLs());
 
 		for (String serverUrl : urls) {
-			try {
-				Element docEle;
-				Document serverHeader = ServerPackParser.readXmlFromUrl(serverUrl);
-				if (!(serverHeader == null)) {
-					Element parent = serverHeader.getDocumentElement();
-					if (parent.getNodeName().equals("ServerPack")) {
-						String mcuVersion = parent.getAttribute("version");
-						NodeList servers = parent.getElementsByTagName("Server");
-						for (int i = 0; i < servers.getLength(); i++) {
-							docEle = (Element) servers.item(i);
-							ServerList sl = new ServerList();
-							ServerList.fromElement(mcuVersion, serverUrl, docEle, sl);
-							if (!sl.isFakeServer()) {
-								ServerList newEntry = ServerPackParser.parseDocument(serverHeader,sl.getServerId(),new HashMap<String,Module>(), sl.getServerId(), sl.getVersion());
-								newEntry.setPackUrl(serverUrl);
-								Instance instData = new Instance();
-								AtomicReference<Instance> ref = new AtomicReference<>(instData);
-								newEntry.setState(getPackState(newEntry, ref));
-								slList.add(newEntry);
-							}
-						}
-					} else {
-						ServerList sl = new ServerList();
-						ServerList.fromElement("1.0", serverUrl, parent, sl);
-						Instance instData = new Instance();
-						AtomicReference<Instance> ref = new AtomicReference<>(instData);
-						sl.setState(getPackState(sl, ref));
-						slList.add(sl);
-					}
-				} else {
-					log("Unable to get server information from " + serverUrl);
+			ServerPack pack = ServerPackParser.loadFromURL(serverUrl, false);
+			for (Server server : pack.getServers()) {
+				if (server instanceof ServerList) {
+					Instance instData = new Instance();
+					AtomicReference<Instance> ref = new AtomicReference<>(instData);
+					((ServerList) server).setState(getPackState((ServerList) server, ref));
+					slList.add((ServerList) server);
 				}
-			} catch (Exception e) {
-				baseLogger.log(Level.SEVERE, "Failed to load from: " + serverUrl, e);
 			}
 		}
 		if (serverList != null) {
@@ -862,6 +837,15 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		frameMain.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
 		this.selected = entry;
 		newsBrowser.navigate(entry.getNewsUrl());
+		if (newsBrowser.isModern() && entry.hasStylesheet()) {
+			int sourceTab = instanceTabs.indexOfTab("Source");
+			if (sourceTab != -1) {
+				instanceTabs.remove(sourceTab);
+			}
+			BrowserProxy sourceBrowser = BrowserProxy.createProxy();
+			instanceTabs.addTab("Source", sourceBrowser.getBaseComponent());
+			sourceBrowser.navigate(entry.getPackUrl());
+		}
 		//entry = ServerPackParser.loadFromURL(entry.getPackUrl(), entry.getServerId());
 		List<Module> modList = new ArrayList<>(entry.getModules().values());
 		Instance instData = new Instance();
@@ -1041,6 +1025,11 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 	@Override
 	public void lostOwnership(Clipboard clipboard, Transferable contents) {
 		// Do nothing
+	}
+
+	public void setDirty() {
+		serverList.getSelectedValue().setState(ServerList.State.UPDATE);
+		btnLaunch.setEnabled(false);
 	}
 
 	private final class InstanceListener implements ListSelectionListener {
