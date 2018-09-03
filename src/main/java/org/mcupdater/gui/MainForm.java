@@ -87,7 +87,6 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 	private boolean playing;
 	private JTabbedPane instanceTabs;
 	private JScrollPane progressScroller;
-	private boolean dirty;
 
 	public MainForm() {
 		self = this;
@@ -289,8 +288,14 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 				lblSession.setIconTextGap(3);
 				lblSession.setHorizontalTextPosition(JLabel.LEFT);
 				MojangStatus current = MojangStatus.getMojangStatus();
-				lblAuth.setIcon(current.getAuth() ? GREEN_FLAG : RED_FLAG);
-				lblSession.setIcon(current.getSession() ? GREEN_FLAG : RED_FLAG);
+				if (current == null) {
+					baseLogger.severe("Could not get Mojang auth server status!");
+					lblAuth.setIcon(RED_FLAG);
+					lblSession.setIcon(RED_FLAG);
+				} else {
+					lblAuth.setIcon(current.getAuth() ? GREEN_FLAG : RED_FLAG);
+					lblSession.setIcon(current.getSession() ? GREEN_FLAG : RED_FLAG);
+				}
 				panelStatus.add(lblMojang, gbc);
 				panelStatus.add(lblAuth, gbc);
 				panelStatus.add(lblSession, gbc);
@@ -816,12 +821,14 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 
 		for (String serverUrl : urls) {
 			ServerPack pack = ServerPackParser.loadFromURL(serverUrl, false);
-			for (Server server : pack.getServers()) {
-				if (server instanceof ServerList) {
-					Instance instData = new Instance();
-					AtomicReference<Instance> ref = new AtomicReference<>(instData);
-					((ServerList) server).setState(getPackState((ServerList) server, ref));
-					slList.add((ServerList) server);
+			if (!(pack == null)) {
+				for (Server server : pack.getServers()) {
+					if (server instanceof ServerList) {
+						Instance instData = new Instance();
+						AtomicReference<Instance> ref = new AtomicReference<>(instData);
+						((ServerList) server).setState(getPackState((ServerList) server, ref));
+						slList.add((ServerList) server);
+					}
 				}
 			}
 		}
@@ -898,7 +905,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 			ref.getAndSet(instData);
 			reader.close();
 		} catch (IOException e) {
-			baseLogger.log(Level.WARNING, "instance.json file not found.  This is not an error if the instance has not been installed.");
+			baseLogger.log(Level.WARNING, entry.getFriendlyName() + " has not been installed or instance data is missing");
 		}
 		boolean needUpdate = (instData.getHash().isEmpty() || !instData.getHash().equals(remoteHash) || !instData.getMCVersion().equals(entry.getVersion()));
 		boolean needNewMCU = Version.isVersionOld(entry.getMCUVersion());
