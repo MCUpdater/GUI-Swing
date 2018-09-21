@@ -14,9 +14,16 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
+import javax.swing.text.JTextComponent;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -25,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.logging.Level;
 
@@ -463,6 +471,14 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 				}
 			}
 		});
+		addChangeListener(txtJVMOpts, new ChangeListener() {
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				if (txtJVMOpts.getText().isEmpty()) {
+					txtJVMOpts.setText(" ");
+				}
+			}
+		});
 		btnWrapperBrowse.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
@@ -678,4 +694,61 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		updateValues();
 	}
 
+	/**
+	 * Installs a listener to receive notification when the text of any
+	 * {@code JTextComponent} is changed. Internally, it installs a
+	 * {@link DocumentListener} on the text component's {@link Document},
+	 * and a {@link PropertyChangeListener} on the text component to detect
+	 * if the {@code Document} itself is replaced.
+	 *
+	 * @param text any text component, such as a {@link JTextField}
+	 *        or {@link JTextArea}
+	 * @param changeListener a listener to receieve {@link ChangeEvent}s
+	 *        when the text is changed; the source object for the events
+	 *        will be the text component
+	 * @throws NullPointerException if either parameter is null
+	 */
+	public static void addChangeListener(final JTextComponent text, final ChangeListener changeListener) {
+		Objects.requireNonNull(text);
+		Objects.requireNonNull(changeListener);
+		final DocumentListener dl = new DocumentListener() {
+			private int lastChange = 0, lastNotifiedChange = 0;
+
+			@Override
+			public void insertUpdate(DocumentEvent e) {
+				changedUpdate(e);
+			}
+
+			@Override
+			public void removeUpdate(DocumentEvent e) {
+				changedUpdate(e);
+			}
+
+			@Override
+			public void changedUpdate(DocumentEvent e) {
+				lastChange++;
+				SwingUtilities.invokeLater(new Runnable() {
+					@Override
+					public void run() {
+						if (lastNotifiedChange != lastChange) {
+							lastNotifiedChange = lastChange;
+							changeListener.stateChanged(new ChangeEvent(text));
+					}
+					}
+				});
+			}
+		};
+		text.addPropertyChangeListener("document", new PropertyChangeListener() {
+			@Override
+			public void propertyChange(PropertyChangeEvent e) {
+				javax.swing.text.Document d1 = (javax.swing.text.Document) e.getOldValue();
+				javax.swing.text.Document d2 = (javax.swing.text.Document) e.getNewValue();
+				if (d1 != null) d1.removeDocumentListener(dl);
+				if (d2 != null) d2.addDocumentListener(dl);
+				dl.changedUpdate(null);
+			}
+		});
+		javax.swing.text.Document d = text.getDocument();
+		if (d != null) d.addDocumentListener(dl);
+	}
 }
