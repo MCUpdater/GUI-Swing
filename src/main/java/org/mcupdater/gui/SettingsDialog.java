@@ -82,7 +82,7 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		setModalityType(ModalityType.APPLICATION_MODAL);
 		setModal(true);
 		setTitle("Settings");
-		setResizable(true);
+		setResizable(false);
 		getContentPane().setLayout(new BorderLayout());
 		setIconImage(new ImageIcon(this.getClass().getResource("mcu-icon.png")).getImage());
 		setSize(700, 500);
@@ -229,7 +229,9 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 					);
 				}
 			}
-			pnlTabs.add("Java", new JScrollPane(pnlJava));
+			JScrollPane pnlJavaScroll = new JScrollPane(pnlJava);
+			pnlJavaScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+			pnlTabs.add("Java", pnlJavaScroll);
 
 			JPanel pnlMinecraft = new JPanel();
 			{
@@ -312,7 +314,9 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 					);
 				}
 			}
-			pnlTabs.add("Minecraft", new JScrollPane(pnlMinecraft));
+			JScrollPane pnlMinecraftScroll = new JScrollPane(pnlMinecraft);
+			pnlMinecraftScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+			pnlTabs.add("Minecraft", pnlMinecraftScroll);
 
 			JPanel pnlMCU = new JPanel();
 			{
@@ -407,7 +411,9 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 					);
 				}
 			}
-			pnlTabs.add("MCUpdater", new JScrollPane(pnlMCU));
+			JScrollPane pnlMCUScroll = new JScrollPane(pnlMCU);
+			//pnlMCUScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+			pnlTabs.add("MCUpdater", pnlMCUScroll);
 		}
 		getContentPane().add(pnlTabs, BorderLayout.CENTER);
 		getContentPane().add(pnlActions, BorderLayout.SOUTH);

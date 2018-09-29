@@ -536,7 +536,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		}
 		String mainClass;
 		List<String> args = new ArrayList<>();
-		StringBuilder clArgs = new StringBuilder(mcVersion.getMinecraftArguments());
+		StringBuilder clArgs = new StringBuilder(mcVersion.getEffectiveArguments());
 		List<String> libs = new ArrayList<>();
 		MCUpdater mcu = MCUpdater.getInstance();
 		File indexesPath = mcu.getArchiveFolder().resolve("assets").resolve("indexes").toFile();
