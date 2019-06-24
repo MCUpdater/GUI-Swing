@@ -10,11 +10,13 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.util.List;
+import java.util.logging.Level;
 
 public class Main {
 	public static List<String> passthroughArgs;
 	private static String defaultPackURL;
 	public static ConsoleForm mcuConsole;
+	public static CALogHandler consoleHandler;
 
 	public static void main(String[] args) {
 		System.setProperty("java.net.preferIPv4Stack", "true");
@@ -77,6 +79,10 @@ public class Main {
 						@Override public boolean isSupportedLookAndFeel() { return true; }
 					});
 					mcuConsole = new ConsoleForm("MCU Console");
+					consoleHandler = new CALogHandler(mcuConsole.getConsole());
+					consoleHandler.setLevel(Level.INFO);
+					MCUpdater.apiLogger.addHandler(consoleHandler);
+
 					new MainForm();
 				} catch (IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException | ClassNotFoundException e) {
 					e.printStackTrace();
@@ -98,4 +104,9 @@ public class Main {
 	public static String getDefaultPackURL() {
 		return defaultPackURL;
 	}
+
+	public static CALogHandler getLogHandler() {
+		return consoleHandler;
+	}
+
 }
