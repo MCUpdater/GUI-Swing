@@ -10,6 +10,7 @@ public class ConsoleArea extends JTextPane {
 	public final Style infoStyle = doc.addStyle("Info", null);
 	public final Style warnStyle = doc.addStyle("Warning", null);
 	public final Style errorStyle = doc.addStyle("Error", null);
+	public final Style genericStyle = doc.addStyle("Generic", null);
 	private final ConcurrentLinkedQueue<Entry> logQueue = new ConcurrentLinkedQueue<>();
 
 	public ConsoleArea() {
@@ -17,6 +18,7 @@ public class ConsoleArea extends JTextPane {
 		StyleConstants.setForeground(infoStyle, new Color(0x007700));
 		StyleConstants.setForeground(warnStyle, new Color(0xaaaa00));
 		StyleConstants.setForeground(errorStyle, Color.red);
+		StyleConstants.setForeground(genericStyle, Color.BLACK);
 		this.setEditable(false);
 		//this.getDocument().addDocumentListener(new LimitLinesDocumentListener(200));
 		this.startQueue();
