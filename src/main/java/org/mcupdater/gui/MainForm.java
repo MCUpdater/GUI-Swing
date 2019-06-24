@@ -675,8 +675,9 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 				ConsoleComponent mcOutput = null;
 				try{
 					if (settings.isMinecraftToConsole()) {
-						mcOutput = new ConsoleComponent("Minecraft instance: " + selected.getName());
-						logTabs.addTab(mcOutput.getTitle(), mcOutput.scroller);
+						mcOutput = new ConsoleComponent("Instance: " + selected.getName());
+						createOutputTab(mcOutput);
+						//logTabs.addTab(mcOutput.getTitle(), mcOutput.scroller);
 					}
 					Process task = pb.start();
 					BufferedReader buffRead = new BufferedReader(new InputStreamReader(task.getInputStream()));
@@ -699,6 +700,9 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 				} finally {
 					if (mcOutput != null) {
 						mcOutput.setCloseable(true);
+						if (logTabs.getTabComponentAt(logTabs.indexOfTab(mcOutput.getID())) instanceof LogTabUI) {
+							((LogTabUI) (logTabs.getTabComponentAt(logTabs.indexOfTab(mcOutput.getID())))).allowClose();
+						}
 					}
 					baseLogger.info("Minecraft process terminated");
 					setPlaying(false);
@@ -773,7 +777,9 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 				ConsoleComponent mcOutput = null;
 				try{
 					if (settings.isMinecraftToConsole()) {
-						mcOutput = new ConsoleComponent("Minecraft instance: " + selected.getName());
+						mcOutput = new ConsoleComponent("Instance: " + selected.getName());
+						createOutputTab(mcOutput);
+						//logTabs.addTab(mcOutput.getTitle(), mcOutput.scroller);
 					}
 					Process task = pb.start();
 					BufferedReader buffRead = new BufferedReader(new InputStreamReader(task.getInputStream()));
@@ -783,6 +789,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 							if (settings.isMinecraftToConsole()) {
 								if (mcOutput != null) {
 									Style lineStyle = null;
+									lineStyle = mcOutput.getConsole().genericStyle;
 									if (line.contains("WARNING")) { lineStyle = mcOutput.getConsole().warnStyle; }
 									if (line.contains("SEVERE")) { lineStyle = mcOutput.getConsole().errorStyle; }
 									mcOutput.getConsole().log(line + "\n", lineStyle);
@@ -795,6 +802,9 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 				} finally {
 					if (mcOutput != null) {
 						mcOutput.setCloseable(true);
+						if (logTabs.getTabComponentAt(logTabs.indexOfTab(mcOutput.getID())) instanceof LogTabUI) {
+							((LogTabUI) (logTabs.getTabComponentAt(logTabs.indexOfTab(mcOutput.getID())))).allowClose();
+						}
 					}
 					baseLogger.info("Minecraft process terminated");
 					setPlaying(false);
@@ -802,6 +812,12 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 			}
 		});
 		gameThread.start();
+	}
+
+	private void createOutputTab(ConsoleComponent mcOutput) {
+		LogTabUI tabUI = new LogTabUI(mcOutput);
+		logTabs.addTab(mcOutput.getID(), mcOutput.getScroller());
+		logTabs.setTabComponentAt(logTabs.indexOfTab(mcOutput.getID()), tabUI);
 	}
 
 	// Section - Logic elements
@@ -1136,5 +1152,29 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		public int getBitDepth() {
 			return bitDepth;
 		}
+	}
+
+	private class LogTabUI extends JPanel {
+		private JLabel caption;
+		private JButton closeButton;
+
+		public LogTabUI(final ConsoleComponent mcOutput) {
+			this.setOpaque(false);
+			this.setLayout(new BorderLayout());
+			caption = new JLabel(mcOutput.getTitle());
+			caption.setOpaque(false);
+			closeButton = new JButton(new ImageIcon(this.getClass().getResource("cross.png")));
+			closeButton.setEnabled(false);
+			closeButton.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent al) {
+					logTabs.remove(logTabs.indexOfTab(mcOutput.getID()));
+				}
+			});
+			this.add(caption, BorderLayout.CENTER);
+			this.add(closeButton, BorderLayout.EAST);
+		}
+
+		public void allowClose() { closeButton.setEnabled(true); }
 	}
 }
