@@ -542,7 +542,12 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		}
 		String mainClass;
 		List<String> args = new ArrayList<>();
-		StringBuilder clArgs = new StringBuilder(mcVersion.getEffectiveArguments());
+		StringBuilder clArgs;
+		if (Version.requestedFeatureLevel(selected.getVersion(),"1.13") || selected.getLoaders().size() == 0) {
+			clArgs = new StringBuilder(mcVersion.getEffectiveArguments());
+		} else {
+			clArgs = new StringBuilder();
+		}
 		List<String> libs = new ArrayList<>();
 		MCUpdater mcu = MCUpdater.getInstance();
 		Path instancePath = mcu.getInstanceRoot().resolve(selected.getServerId());
@@ -671,6 +676,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 			log(entry);
 		}
 		log("=======================");
+		System.out.println(String.join(" ", args));
 		final ProcessBuilder pb = new ProcessBuilder(args);
 		pb.environment().put("openeye.tags","MCUpdater," + selected.getName() + " (" + selected.getServerId() + ")");
 		pb.directory(mcu.getInstanceRoot().resolve(selected.getServerId()).toFile());
