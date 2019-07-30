@@ -34,7 +34,7 @@ public class ProgressView extends JPanel {
 	public synchronized void updateProgress(final String jobName, final String parentId, float newProgress, int totalFiles, int successfulFiles) {
 		ProgressItem bar = items.get(new MultiKey(parentId, jobName));
 		if (bar == null) { return; }
-		bar.setProgress(newProgress, totalFiles, successfulFiles);
+		bar.setProgress(newProgress, totalFiles, successfulFiles );
 	}
 
 	public int getActiveCount() {
