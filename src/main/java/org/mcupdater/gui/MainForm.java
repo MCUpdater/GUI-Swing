@@ -535,15 +535,22 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		String playerName = user.getName();
 		String sessionKey = user.getSessionKey(this);
 		MinecraftVersion mcVersion = MinecraftVersion.loadVersion(selected.getVersion());
+		selected.getLoaders().sort(new OrderComparator());
 		String indexName = mcVersion.getAssets();
 		if (indexName == null) {
 			indexName = "legacy";
 		}
 		String mainClass;
 		List<String> args = new ArrayList<>();
-		StringBuilder clArgs = new StringBuilder(mcVersion.getEffectiveArguments());
+		StringBuilder clArgs;
+		if (Version.requestedFeatureLevel(selected.getVersion(),"1.13") || selected.getLoaders().size() == 0) {
+			clArgs = new StringBuilder(mcVersion.getEffectiveArguments());
+		} else {
+			clArgs = new StringBuilder();
+		}
 		List<String> libs = new ArrayList<>();
 		MCUpdater mcu = MCUpdater.getInstance();
+		Path instancePath = mcu.getInstanceRoot().resolve(selected.getServerId());
 		File indexesPath = mcu.getArchiveFolder().resolve("assets").resolve("indexes").toFile();
 		File indexFile = new File(indexesPath, indexName + ".json");
 		String json;
@@ -614,6 +621,10 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 				}
 			}
 		}
+		for (Loader loader : selected.getLoaders()) {
+			libs.addAll(loader.getILoader().getClasspathEntries(instancePath.toFile()));
+			clArgs.append(loader.getILoader().getArguments(instancePath.toFile()));
+		}
 		for (Library lib : mcVersion.getLibraries()) {
 			String key = StringUtils.join(Arrays.copyOfRange(lib.getName().split(":"),0,2),":");
 			if (selected.getLibOverrides().containsKey(key)) {
@@ -626,7 +637,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		args.add("-cp");
 		StringBuilder classpath = new StringBuilder();
 		for (String entry : libs) {
-			classpath.append(mcu.getInstanceRoot().resolve(selected.getServerId()).resolve(entry).toString()).append(MCUpdater.cpDelimiter());
+			classpath.append(instancePath.resolve(entry).toString()).append(MCUpdater.cpDelimiter());
 		}
 		classpath.append(mcu.getInstanceRoot().resolve(selected.getServerId()).resolve("bin").resolve("minecraft.jar").toString());
 		args.add(classpath.toString());
@@ -665,6 +676,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 			log(entry);
 		}
 		log("=======================");
+		System.out.println(String.join(" ", args));
 		final ProcessBuilder pb = new ProcessBuilder(args);
 		pb.environment().put("openeye.tags","MCUpdater," + selected.getName() + " (" + selected.getServerId() + ")");
 		pb.directory(mcu.getInstanceRoot().resolve(selected.getServerId()).toFile());
