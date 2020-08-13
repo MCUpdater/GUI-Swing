@@ -890,6 +890,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		}
 		//entry = ServerPackParser.loadFromURL(entry.getPackUrl(), entry.getServerId());
 		List<Module> modList = new ArrayList<>(entry.getModules().values());
+		List<Loader> loaderList = new ArrayList<>(entry.getLoaders());
 		Instance instData = new Instance();
 		AtomicReference<Instance> ref = new AtomicReference<>(instData);
 		entry.setState(getPackState(entry, ref));
@@ -914,7 +915,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 				}
 			}
 		}
-		modPanel.reload(modList, instData.getOptionalMods());
+		modPanel.reload(loaderList, modList, instData.getOptionalMods());
 
 		frameMain.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 		baseLogger.info("Selection changed to: " + entry.getServerId());
