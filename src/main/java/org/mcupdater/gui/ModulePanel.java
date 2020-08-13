@@ -2,6 +2,7 @@ package org.mcupdater.gui;
 
 import org.mcupdater.gui.MainForm;
 import org.mcupdater.gui.ModuleWidget;
+import org.mcupdater.model.Loader;
 import org.mcupdater.model.ModSide;
 import org.mcupdater.model.Module;
 
@@ -16,11 +17,16 @@ import java.util.logging.Level;
 public class ModulePanel extends JPanel {
 	private Map<String,ModuleWidget> modules = new HashMap<>();
 
-	public void reload(List<Module> modList, Map<String, Boolean> optionalMods) {
+	public void reload(List<Loader> loaderList, List<Module> modList, Map<String, Boolean> optionalMods) {
 		this.setVisible(false);
 		this.removeAll();
 		modules = new HashMap<>();
 		this.setLayout(new BoxLayout(this, BoxLayout.PAGE_AXIS));
+		for (Loader loader : loaderList) {
+			LoaderWidget newEntry;
+			newEntry = new LoaderWidget(loader);
+			this.add(newEntry);
+		}
 		for (Module entry : modList) {
             if (entry.getSide().equals(ModSide.SERVER)) {
                 continue;
