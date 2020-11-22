@@ -1,5 +1,7 @@
 package org.mcupdater.gui;
 
+import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.FlatLightLaf;
 import joptsimple.ArgumentAcceptingOptionSpec;
 import joptsimple.NonOptionArgumentSpec;
 import joptsimple.OptionParser;
@@ -41,7 +43,10 @@ public class Main {
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+					UIManager.setLookAndFeel( new FlatDarkLaf() );
+					JFrame.setDefaultLookAndFeelDecorated( true );
+					JDialog.setDefaultLookAndFeelDecorated( true );
+					//UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
 					/*
 					if (options.has("syslf")) {
 						UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -84,7 +89,7 @@ public class Main {
 					MCUpdater.apiLogger.addHandler(consoleHandler);
 
 					new MainForm();
-				} catch (IllegalAccessException | InstantiationException | UnsupportedLookAndFeelException | ClassNotFoundException e) {
+				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}
