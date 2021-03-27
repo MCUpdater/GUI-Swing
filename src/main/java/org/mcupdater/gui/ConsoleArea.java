@@ -14,8 +14,8 @@ public class ConsoleArea extends JTextPane {
 	private final ConcurrentLinkedQueue<Entry> logQueue = new ConcurrentLinkedQueue<>();
 
 	public ConsoleArea() {
-		this.setBackground(Color.white);
-		StyleConstants.setForeground(infoStyle, new Color(0x007700));
+		this.setBackground(Color.darkGray);
+		StyleConstants.setForeground(infoStyle, new Color(0x00aa00));
 		StyleConstants.setForeground(warnStyle, new Color(0xaaaa00));
 		StyleConstants.setForeground(errorStyle, Color.red);
 		StyleConstants.setForeground(genericStyle, Color.BLACK);
