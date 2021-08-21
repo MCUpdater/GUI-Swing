@@ -1,0 +1,26 @@
+plugins {
+    id 'workspace.java-application-conventions'
+    id 'org.openjfx.javafxplugin' version '0.0.10'
+}
+
+javafx {
+    version = '16'
+    modules = [ 'javafx.swing', 'javafx.graphics', 'javafx.web' ]
+}
+
+version = sharedVersion
+
+dependencies {
+    implementation project(':MCU-API')
+    implementation project(':MCU-DownloadLib')
+    implementation 'com.mojang:authlib:1.6.25'
+    implementation 'org.swinglabs.swingx:swingx-all:1.6.5-1'
+    implementation group: 'com.formdev', name: 'flatlaf', version: '1.5'
+}
+
+repositories {
+    maven {
+        url 'https://repo.maven.apache.org/maven2'
+        name 'Maven Central'
+    }
+}
