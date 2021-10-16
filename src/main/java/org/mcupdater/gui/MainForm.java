@@ -22,17 +22,13 @@ import org.mcupdater.mojang.AssetIndex;
 import org.mcupdater.mojang.AssetManager;
 import org.mcupdater.mojang.Library;
 import org.mcupdater.mojang.MinecraftVersion;
-import org.mcupdater.settings.Profile;
-import org.mcupdater.settings.Settings;
-import org.mcupdater.settings.SettingsListener;
-import org.mcupdater.settings.SettingsManager;
+import org.mcupdater.settings.*;
 import org.mcupdater.util.MCUpdater;
 import org.mcupdater.util.MojangStatus;
 import org.mcupdater.util.ServerPackParser;
 import org.mcupdater.util.ServerStatus;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -648,7 +644,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		StrSubstitutor fieldReplacer = new StrSubstitutor(fields);
 		fields.put("auth_player_name", playerName);
 		fields.put("auth_uuid", user.getUUID().replace("-",""));
-		fields.put("auth_access_token", user.getAccessToken());
+		fields.put("auth_access_token", user.getAuthAccessToken());
 		fields.put("auth_session", sessionKey);
 		fields.put("version_name", selected.getVersion());
 		fields.put("game_directory", mcu.getInstanceRoot().resolve(selected.getServerId()).toString());
@@ -662,7 +658,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		fields.put("assets_index_name", indexName);
 		fields.put("resource_packs", mcu.getInstanceRoot().resolve(selected.getServerId()).resolve("resourcepacks").toString());
 		fields.put("user_properties", "{}"); //TODO: This will likely actually get used at some point.
-		fields.put("user_type", (user.isLegacy() ? UserType.LEGACY.toString() : UserType.MOJANG.toString()));
+		//fields.put("user_type", (user.isLegacy() ? UserType.LEGACY.toString() : UserType.MOJANG.toString()));
 		fields.put("version_type", mcVersion.getType());
 		String[] fieldArr = tmpclArgs.split(" ");
 		for (int i = 0; i < fieldArr.length; i++) {
@@ -979,11 +975,10 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		login.setLoginService(loginService);
 		JXLoginPane.showLoginDialog(frameMain, login);
 		Object response = loginService.getResponse();
-		Profile newProfile = null;
+		YggdrasilProfile newProfile = null;
 		if (response instanceof YggdrasilUserAuthentication) {
 			YggdrasilUserAuthentication user = (YggdrasilUserAuthentication) response;
-			newProfile = new Profile();
-			newProfile.setStyle("Yggdrasil");
+			newProfile = new YggdrasilProfile();
 			newProfile.setUsername(login.getUserName());
 			newProfile.setAccessToken(user.getAuthenticatedToken());
 			newProfile.setName(user.getSelectedProfile().getName());
@@ -998,9 +993,9 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 	public DownloadQueue submitNewQueue(String queueName, String parent, Collection<Downloadable> files, File basePath, File cachePath) {
 		progressView.addProgressBar(queueName, parent);
 		if (profileModel.getSelectedItem() != null) {
-			return new DownloadQueue(queueName, parent, this, files, basePath, cachePath, ((Profile)profileModel.getSelectedItem()).getName());
+			return new DownloadQueue(queueName, parent, this, files, basePath, cachePath, ((Profile)profileModel.getSelectedItem()).getName(), baseLogger );
 		} else {
-			return new DownloadQueue(queueName, parent, this, files, basePath, cachePath);
+			return new DownloadQueue(queueName, parent, this, files, basePath, cachePath, baseLogger);
 		}
 	}
 
@@ -1016,6 +1011,8 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		JOptionPane.showMessageDialog(null, msg, "MCUpdater", JOptionPane.WARNING_MESSAGE );
 	}
 
+	// Start SettingsListener methods
+	// -----
 	@Override
 	public void stateChanged(boolean newState) {
 
@@ -1030,7 +1027,11 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		cboProfiles.setSelectedIndex(-1);
 		cboProfiles.setSelectedItem(newSettings.findProfile(lastProfile));
 	}
+	// -----
+	// End SettingsListener methods
 
+	// Begin TrackerListener methods
+	// -----
 	@Override
 	public void onQueueFinished(DownloadQueue queue) {
 		synchronized (progressView) {
@@ -1057,6 +1058,8 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 	public void printMessage(String msg) {
 		log(msg);
 	}
+	// -----
+	// End TrackerListener methods
 
 	public void setPlaying(boolean playing) {
 		this.playing = playing;
@@ -1066,10 +1069,14 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		return playing;
 	}
 
+	// Begin ClipboardOwner method
+	// -----
 	@Override
 	public void lostOwnership(Clipboard clipboard, Transferable contents) {
 		// Do nothing
 	}
+	// -----
+	// End ClipboardOwner methods
 
 	public void setDirty() {
 		serverList.getSelectedValue().setState(ServerList.State.UPDATE);
