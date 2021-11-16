@@ -28,9 +28,9 @@ public class ModulePanel extends JPanel {
 			this.add(newEntry);
 		}
 		for (Module entry : modList) {
-            if (entry.getSide().equals(ModSide.SERVER)) {
-                continue;
-            }
+			if (entry.getSide().equals(ModSide.SERVER)) {
+				continue;
+			}
 			ModuleWidget newEntry;
 			if (optionalMods.containsKey(entry.getId())) {
 				newEntry = new ModuleWidget(entry, true, optionalMods.get(entry.getId()));
