@@ -114,7 +114,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 		baseLogger.info("Infracells up!");
 		if (!SettingsManager.getInstance().getSettings().getPackURLs().contains(Main.getDefaultPackURL())) {
 			SettingsManager.getInstance().getSettings().addPackURL(Main.getDefaultPackURL());
-			SettingsManager.getInstance().saveSettings();
+			SettingsManager.getInstance().setDirty();
 		}
 		if (SettingsManager.getInstance().getSettings().getProfiles().size() == 0) {
 			Profile newProfile = requestLogin("");
@@ -122,7 +122,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 				SettingsManager.getInstance().getSettings().addOrReplaceProfile(newProfile);
 				SettingsManager.getInstance().getSettings().setLastProfile(newProfile.getName());
 				SettingsManager.getInstance().fireSettingsUpdate();
-				SettingsManager.getInstance().saveSettings();
+				SettingsManager.getInstance().setDirty();
 			}
 		}
 		settingsChanged(SettingsManager.getInstance().getSettings());
@@ -380,9 +380,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 								SettingsManager.getInstance().fireSettingsUpdate();
 							}
 						}
-						if (!SettingsManager.getInstance().isDirty()) {
-							SettingsManager.getInstance().saveSettings();
-						}
+						SettingsManager.getInstance().setDirty();
 					} else {
 						log("Unable to get server information from " + newUrl);
 					}
@@ -494,9 +492,7 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 				if (!(launchProfile == null)) {
 					SettingsManager.getInstance().getSettings().setLastProfile(launchProfile.getName());
 					SettingsManager.getInstance().getSettings().findProfile(launchProfile.getName()).setLastInstance(selected.getServerId());
-					if (!SettingsManager.getInstance().isDirty()) {
-						SettingsManager.getInstance().saveSettings();
-					}
+					SettingsManager.getInstance().setDirty();
 					if (selected.getLauncherType().equals("Legacy")) {
 						try {
 							tryOldLaunch(selected, launchProfile);
@@ -1013,10 +1009,6 @@ public class MainForm extends MCUApp implements SettingsListener, TrackerListene
 
 	// Start SettingsListener methods
 	// -----
-	@Override
-	public void stateChanged(boolean newState) {
-
-	}
 
 	@Override
 	public void settingsChanged(Settings newSettings) {

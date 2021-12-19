@@ -449,7 +449,6 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 
 				manager.setDirty();
 				manager.fireSettingsUpdate();
-				SettingsManager.getInstance().saveSettings();
 				self.dispose();
 			}
 		});
@@ -689,10 +688,6 @@ public class SettingsDialog extends JDialog implements SettingsListener {
 		}
 
 		txtJVMDetails.setVisible(!txtJVMDetails.getText().isEmpty());
-	}
-
-	@Override
-	public void stateChanged(boolean newState) {
 	}
 
 	@Override
